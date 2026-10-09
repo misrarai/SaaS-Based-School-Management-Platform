@@ -91,6 +91,11 @@ class Invoice(UUIDPKMixin, TimestampMixin, Base):
     due_date: Mapped[date_] = mapped_column(Date, nullable=False)
     status: Mapped[InvoiceStatus] = mapped_column(Enum(InvoiceStatus), default=InvoiceStatus.PENDING, nullable=False)
     notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Running total of VERIFIED payments (kept in sync by FeeService/FeeCollectionService) so a
+    # partially-paid invoice's balance is net_amount - amount_paid. late_fee_amount records the
+    # fine already folded into net_amount (charged at most once per invoice).
+    amount_paid: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0, server_default="0")
+    late_fee_amount: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False, default=0, server_default="0")
 
 
 class Payment(UUIDPKMixin, TimestampMixin, Base):
@@ -114,3 +119,7 @@ class Payment(UUIDPKMixin, TimestampMixin, Base):
     verified_by_user_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("users.id"), nullable=True)
     verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     rejection_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Set when the payment was collected at the fee counter (see app/models/fee_collection.py).
+    receipt_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("fee_receipts.id"), nullable=True, index=True
+    )

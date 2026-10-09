@@ -17,6 +17,8 @@ export const adminNavItems: NavItem[] = [
     icon: <ClassIcon fontSize="small" />,
     children: [
       { label: "Classes & Subjects", to: "/admin/classes" },
+      { label: "Courses", to: "/admin/courses" },
+      { label: "Academic Years", to: "/admin/academic-years" },
       { label: "Teachers", to: "/admin/teachers" },
     ],
   },
@@ -43,6 +45,19 @@ export const adminNavItems: NavItem[] = [
     children: [
       { label: "Active Staff", to: "/admin/staff?status=active" },
       { label: "Old Staff", to: "/admin/staff?status=inactive" },
+    ],
+  },
+  {
+    label: "Front Office",
+    to: "/admin/front-office/enquiries",
+    icon: <BadgeIcon fontSize="small" />,
+    children: [
+      { label: "Admission Enquiries", to: "/admin/front-office/enquiries" },
+      { label: "Visitor Book", to: "/admin/front-office/visitors" },
+      { label: "Complaints", to: "/admin/front-office/complaints" },
+      { label: "Postal Register", to: "/admin/front-office/postal" },
+      { label: "Gate Passes", to: "/admin/front-office/gate-passes" },
+      { label: "Phone Call Log", to: "/admin/front-office/calls" },
     ],
   },
   {
@@ -76,6 +91,73 @@ export const adminNavItems: NavItem[] = [
       { label: "Payment Verification", to: "/admin/fees/payments" },
       { label: "Receipts", to: "/admin/fees/receipts" },
       { label: "Reports", to: "/admin/fees/reports" },
+    ],
+  },
+  {
+    label: "Examinations",
+    to: "/admin/exams",
+    icon: <FactCheckIcon fontSize="small" />,
+    children: [
+      { label: "Exams & Datesheets", to: "/admin/exams" },
+      { label: "Grading Schemes", to: "/admin/exams/grading-schemes" },
+      { label: "Marks Entry", to: "/admin/exams/marks" },
+      { label: "Results / Tabulation", to: "/admin/exams/results" },
+    ],
+  },
+  {
+    label: "Library",
+    to: "/admin/library",
+    icon: <ClassIcon fontSize="small" />,
+    children: [
+      { label: "Catalogue", to: "/admin/library" },
+      { label: "Issue / Return Desk", to: "/admin/library/circulation" },
+      { label: "Reservations", to: "/admin/library/reservations" },
+      { label: "Overdue & Fines", to: "/admin/library/fines" },
+      { label: "Library Settings", to: "/admin/library/settings" },
+    ],
+  },
+  {
+    label: "Transport",
+    to: "/admin/transport/vehicles",
+    icon: <EventIcon fontSize="small" />,
+    children: [
+      { label: "Vehicles", to: "/admin/transport/vehicles" },
+      { label: "Drivers", to: "/admin/transport/drivers" },
+      { label: "Routes & Stops", to: "/admin/transport/routes" },
+      { label: "Student Allocation", to: "/admin/transport/allocations" },
+      { label: "Transport Fees", to: "/admin/transport/fees" },
+      { label: "Transport Reports", to: "/admin/transport/reports" },
+    ],
+  },
+  {
+    label: "Hostel",
+    to: "/admin/hostel",
+    icon: <ClassIcon fontSize="small" />,
+    children: [
+      { label: "Hostels & Rooms", to: "/admin/hostel" },
+      { label: "Allocations", to: "/admin/hostel/allocations" },
+    ],
+  },
+  {
+    label: "Accounting",
+    to: "/admin/accounting/accounts",
+    icon: <PaymentsIcon fontSize="small" />,
+    children: [
+      { label: "Chart of Accounts", to: "/admin/accounting/accounts" },
+      { label: "Income & Expenses", to: "/admin/accounting/income-expenses" },
+      { label: "Vouchers", to: "/admin/accounting/vouchers" },
+    ],
+  },
+  {
+    label: "Payroll & Leaves",
+    to: "/admin/payroll/employees",
+    icon: <PaidIcon fontSize="small" />,
+    children: [
+      { label: "Employees", to: "/admin/payroll/employees" },
+      { label: "Departments & Designations", to: "/admin/payroll/departments" },
+      { label: "Salary Structures", to: "/admin/payroll/salary-structures" },
+      { label: "Leave Requests", to: "/admin/payroll/leaves" },
+      { label: "Leave Types", to: "/admin/payroll/leave-types" },
     ],
   },
   {

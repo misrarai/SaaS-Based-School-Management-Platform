@@ -34,6 +34,42 @@ import { ReportsPage as FeeReportsPage } from "../features/admin/fees/ReportsPag
 import { PayoutRatesPage } from "../features/admin/payouts/PayoutRatesPage";
 import { PayoutsPage } from "../features/admin/payouts/PayoutsPage";
 import { NotificationsPage } from "../features/admin/notifications/NotificationsPage";
+import { AcademicYearsPage } from "../features/admin/academics/AcademicYearsPage";
+import { CoursesPage } from "../features/admin/academics/CoursesPage";
+import { ChartOfAccountsPage } from "../features/admin/accounting/ChartOfAccountsPage";
+import { IncomeExpensePage } from "../features/admin/accounting/IncomeExpensePage";
+import { VouchersPage } from "../features/admin/accounting/VouchersPage";
+import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
+import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
+import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
+import { PostalPage } from "../features/admin/front-office/PostalPage";
+import { GatePassesPage } from "../features/admin/front-office/GatePassesPage";
+import { CallLogPage } from "../features/admin/front-office/CallLogPage";
+import { EmployeesPage } from "../features/admin/payroll/EmployeesPage";
+import { DepartmentsPage } from "../features/admin/payroll/DepartmentsPage";
+import { SalaryStructuresPage } from "../features/admin/payroll/SalaryStructuresPage";
+import { LeaveRequestsPage } from "../features/admin/payroll/LeaveRequestsPage";
+import { LeaveTypesPage } from "../features/admin/payroll/LeaveTypesPage";
+import { VehiclesPage } from "../features/admin/transport/VehiclesPage";
+import { DriversPage } from "../features/admin/transport/DriversPage";
+import { RoutesPage as TransportRoutesPage } from "../features/admin/transport/RoutesPage";
+import { TransportAllocationsPage } from "../features/admin/transport/TransportAllocationsPage";
+import { TransportFeesPage } from "../features/admin/transport/TransportFeesPage";
+import { TransportReportsPage } from "../features/admin/transport/TransportReportsPage";
+import { HostelsPage } from "../features/admin/hostel/HostelsPage";
+import { HostelAllocationsPage } from "../features/admin/hostel/HostelAllocationsPage";
+import {
+  examsAdminRoutes,
+  examsParentRoutes,
+  examsStudentRoutes,
+  examsTeacherRoutes,
+} from "../features/examsModule";
+import {
+  libraryAdminRoutes,
+  libraryParentRoutes,
+  libraryStudentRoutes,
+  libraryTeacherRoutes,
+} from "../features/libraryModule";
 import { TeacherDashboard } from "../features/teacher/TeacherDashboard";
 import { MyClassesPage } from "../features/teacher/classes/MyClassesPage";
 import { MyStudentsPage } from "../features/teacher/students/MyStudentsPage";
@@ -90,6 +126,22 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <ClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/academic-years"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AcademicYearsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/courses"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <CoursesPage />
           </ProtectedRoute>
         }
       />
@@ -298,6 +350,182 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/accounting/accounts"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <ChartOfAccountsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/accounting/income-expenses"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <IncomeExpensePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/accounting/vouchers"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <VouchersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/enquiries"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <EnquiriesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/visitors"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <VisitorsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/complaints"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <ComplaintsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/postal"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <PostalPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/gate-passes"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <GatePassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/calls"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <CallLogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payroll/employees"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <EmployeesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payroll/departments"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DepartmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payroll/salary-structures"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SalaryStructuresPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payroll/leaves"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LeaveRequestsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/payroll/leave-types"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LeaveTypesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transport/vehicles"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <VehiclesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transport/drivers"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DriversPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transport/routes"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <TransportRoutesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transport/allocations"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <TransportAllocationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transport/fees"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <TransportFeesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/transport/reports"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <TransportReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/hostel"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <HostelsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/hostel/allocations"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <HostelAllocationsPage />
           </ProtectedRoute>
         }
       />
@@ -517,6 +745,14 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {examsAdminRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {examsTeacherRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {examsStudentRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {examsParentRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {libraryAdminRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {libraryTeacherRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {libraryStudentRoutes.map((route) => <Route key={route.path} {...route} />)}
+      {libraryParentRoutes.map((route) => <Route key={route.path} {...route} />)}
       <Route path="/" element={<HomeRedirect />} />
     </Routes>
   );

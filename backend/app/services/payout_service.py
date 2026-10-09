@@ -152,6 +152,8 @@ class PayoutService:
 
     def mark_approved(self, tenant_id: uuid.UUID, payout_id: uuid.UUID, approver_id: uuid.UUID) -> TeacherPayout:
         payout = self.get_payout_or_404(tenant_id, payout_id)
+        if payout.status != PayoutStatus.DRAFT:
+            raise ConflictError("Only a draft payout can be approved")
         payout.status = PayoutStatus.APPROVED
         payout.approved_by_user_id = approver_id
         self.db.commit()
@@ -160,6 +162,8 @@ class PayoutService:
 
     def mark_paid(self, tenant_id: uuid.UUID, payout_id: uuid.UUID) -> TeacherPayout:
         payout = self.get_payout_or_404(tenant_id, payout_id)
+        if payout.status != PayoutStatus.APPROVED:
+            raise ConflictError("Only an approved payout can be marked as paid")
         payout.status = PayoutStatus.PAID
         payout.paid_at = datetime.now(timezone.utc)
         self.db.commit()

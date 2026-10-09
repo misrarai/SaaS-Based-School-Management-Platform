@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
+  Chip,
+  Stack,
   FormControl,
   InputLabel,
   MenuItem,
@@ -19,7 +21,8 @@ import { AppShell } from "../../../components/AppShell";
 import { parentNavItems } from "../parentNav";
 import { darkTableHeadSx } from "../../../components/tableStyles";
 import { listMyChildren } from "../../../api/parents";
-import { getGradebook } from "../../../api/assignments";
+import { getGradebook, getSubjectPerformance } from "../../../api/assignments";
+import { getProgress } from "../../../api/progress";
 
 export function GradebookPage() {
   const childrenQuery = useQuery({ queryKey: ["parents", "me", "children"], queryFn: listMyChildren });
@@ -29,6 +32,17 @@ export function GradebookPage() {
   const gradebookQuery = useQuery({
     queryKey: ["gradebook", effectiveStudentId],
     queryFn: () => getGradebook(effectiveStudentId),
+    enabled: !!effectiveStudentId,
+  });
+
+  const progressQuery = useQuery({
+    queryKey: ["progress", effectiveStudentId],
+    queryFn: () => getProgress(effectiveStudentId),
+    enabled: !!effectiveStudentId,
+  });
+  const performanceQuery = useQuery({
+    queryKey: ["performance", effectiveStudentId],
+    queryFn: () => getSubjectPerformance(effectiveStudentId),
     enabled: !!effectiveStudentId,
   });
 
@@ -54,6 +68,26 @@ export function GradebookPage() {
         </Select>
       </FormControl>
 
+      {progressQuery.data && (
+        <Paper variant="outlined" sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
+            Overall performance
+          </Typography>
+          <Stack direction="row" sx={{ flexWrap: "wrap", gap: 1 }}>
+            <Chip label={`Quiz average: ${Math.round(progressQuery.data.quiz_average_percent)}%`} color="primary" />
+            <Chip label={`Assignments completed: ${Math.round(progressQuery.data.assignment_completion_percent)}%`} />
+            <Chip label={`Attendance: ${Math.round(progressQuery.data.attendance_percent)}%`} />
+            {(performanceQuery.data ?? []).map((p) => (
+              <Chip
+                key={p.subject_id}
+                variant="outlined"
+                label={`${p.subject_name}: ${p.average_percent != null ? `${Math.round(p.average_percent)}%` : "—"}`}
+              />
+            ))}
+          </Stack>
+        </Paper>
+      )}
+
       {gradebookQuery.data?.length === 0 && <Alert severity="info">No graded assignments yet.</Alert>}
 
       {!!gradebookQuery.data?.length && (
@@ -64,6 +98,7 @@ export function GradebookPage() {
                 <TableCell>Assignment</TableCell>
                 <TableCell>Due date</TableCell>
                 <TableCell>Marks</TableCell>
+                <TableCell>Teacher feedback</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -74,6 +109,7 @@ export function GradebookPage() {
                   <TableCell>
                     {entry.marks_obtained} / {entry.max_marks ?? "—"}
                   </TableCell>
+                  <TableCell>{entry.teacher_feedback || "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

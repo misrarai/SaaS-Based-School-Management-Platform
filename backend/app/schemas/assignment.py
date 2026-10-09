@@ -60,6 +60,7 @@ class GradebookEntry(BaseModel):
     marks_obtained: float | None
     due_date: datetime
     graded_at: datetime | None
+    teacher_feedback: str | None = None
 
 
 class SubjectPerformanceEntry(BaseModel):
