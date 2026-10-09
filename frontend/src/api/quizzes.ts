@@ -167,3 +167,11 @@ export function getAttemptReview(attemptId: string) {
 export function gradeAttempt(attemptId: string, answers: { question_id: string; marks_awarded: number }[]) {
   return apiClient.post<Attempt>(`/quizzes/attempts/${attemptId}/grade`, { answers }).then((res) => res.data);
 }
+
+export interface MyAttemptHistoryEntry extends Attempt {
+  quiz_title: string;
+}
+
+export function listMyAttempts() {
+  return apiClient.get<MyAttemptHistoryEntry[]>("/quizzes/attempts/me").then((res) => res.data);
+}

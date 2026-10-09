@@ -73,6 +73,8 @@ class InvoiceOut(BaseModel):
     due_date: date
     status: InvoiceStatus
     notes: str | None
+    amount_paid: float = 0
+    late_fee_amount: float = 0
 
     model_config = {"from_attributes": True}
 

@@ -185,6 +185,7 @@ class AssignmentService:
                     "marks_obtained": sub.marks_obtained,
                     "due_date": assignment.due_date,
                     "graded_at": sub.graded_at,
+                    "teacher_feedback": sub.teacher_feedback,
                 }
             )
         entries.sort(key=lambda e: e["due_date"], reverse=True)

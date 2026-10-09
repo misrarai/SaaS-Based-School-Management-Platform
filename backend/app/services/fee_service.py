@@ -1,12 +1,12 @@
 import uuid
 from datetime import date as date_
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import ConflictError, DomainError, NotFoundError
 from app.models.fee import (
     FeePlan,
     Invoice,
@@ -19,6 +19,8 @@ from app.models.fee import (
 from app.models.payment_gateway import GatewayTransaction, GatewayTransactionStatus, PaymentGateway
 from app.models.student_admission_detail import StudentAdmissionDetail
 from app.repositories.academic_repo import ClassGradeRepository
+from app.models.fee_collection import LateFeeRule
+from app.repositories.fee_collection_repo import LateFeeRuleRepository
 from app.repositories.fee_repo import FeePlanRepository, InvoiceRepository, PaymentRepository
 from app.repositories.payment_gateway_repo import GatewayTransactionRepository
 from app.repositories.student_admission_repo import StudentAdmissionDetailRepository
@@ -42,6 +44,25 @@ from app.services.upload_service import save_receipt
 # PKR credited to a referring family's own child when a new student they referred enrolls —
 # see FeeService.apply_referral_credit.
 REFERRAL_REWARD_AMOUNT = 500.0
+
+
+def apply_late_fee(invoice: Invoice, rule: LateFeeRule | None, on_date: date_) -> float:
+    """Charges the tenant's fixed late fee on an unpaid invoice once it is more than
+    rule.grace_days past due. Folded into net_amount (and recorded in late_fee_amount) so every
+    "is it fully paid?" check keeps working unchanged. Charged at most once per invoice.
+    Returns the fine applied (0 when none). Does not commit."""
+    if rule is None or not rule.is_active or float(rule.amount or 0) <= 0:
+        return 0.0
+    if float(invoice.late_fee_amount or 0) > 0:
+        return 0.0
+    if invoice.status in (InvoiceStatus.PAID, InvoiceStatus.WAIVED):
+        return 0.0
+    if on_date <= invoice.due_date + timedelta(days=rule.grace_days or 0):
+        return 0.0
+    fee = float(rule.amount)
+    invoice.late_fee_amount = fee
+    invoice.net_amount = float(invoice.net_amount) + fee
+    return fee
 
 
 class FeeService:
@@ -225,7 +246,16 @@ class FeeService:
         overdue = [inv for inv in pending if inv.due_date < today]
         for inv in overdue:
             inv.status = InvoiceStatus.OVERDUE
-        if overdue:
+        # Late-fee fine (per-tenant rule) on every overdue invoice not yet fined — including
+        # ones flipped on an earlier run that were still inside the grace period then.
+        rule = LateFeeRuleRepository(self.db).get_for_tenant(tenant_id)
+        fined = 0.0
+        if rule is not None:
+            # (autoflush is off, so the just-flipped rows aren't in the OVERDUE query yet)
+            already = self.invoices.list_invoices(tenant_id, status=InvoiceStatus.OVERDUE)
+            for inv in {i.id: i for i in already + overdue}.values():
+                fined += apply_late_fee(inv, rule, today)
+        if overdue or fined:
             self.db.commit()
         return len(overdue)
 
@@ -253,6 +283,14 @@ class FeeService:
             )
         else:
             detail.referral_discount_amount = float(detail.referral_discount_amount or 0) + reward
+
+    def sync_paid_state(self, tenant_id: uuid.UUID, invoice: Invoice) -> None:
+        """Recomputes invoice.amount_paid from its VERIFIED payments and flips it to PAID once
+        fully covered (net_amount includes any late fee). Does not commit."""
+        verified_total = self.payments.sum_verified_for_invoice(tenant_id, invoice.id)
+        invoice.amount_paid = verified_total
+        if verified_total >= float(invoice.net_amount) - 0.005:
+            invoice.status = InvoiceStatus.PAID
 
     def get_invoice_or_404(self, tenant_id: uuid.UUID, invoice_id: uuid.UUID) -> Invoice:
         invoice = self.invoices.get_by_id(tenant_id, invoice_id)
@@ -282,7 +320,11 @@ class FeeService:
         reference_note: str | None,
         receipt: UploadFile | None,
     ) -> Payment:
-        self.get_invoice_or_404(tenant_id, invoice_id)
+        if amount is None or amount <= 0:
+            raise DomainError("Payment amount must be greater than zero")
+        invoice = self.get_invoice_or_404(tenant_id, invoice_id)
+        if invoice.status in (InvoiceStatus.PAID, InvoiceStatus.WAIVED):
+            raise ConflictError(f"This invoice is already {invoice.status.value}")
         receipt_url = save_receipt(receipt) if receipt is not None else None
         payment = self.payments.create(
             Payment(
@@ -396,15 +438,15 @@ class FeeService:
         payment = self.payments.get_by_id(tenant_id, payment_id)
         if payment is None:
             raise NotFoundError("Payment not found")
+        if payment.verification_status != PaymentVerificationStatus.PENDING:
+            raise ConflictError(f"This payment has already been {payment.verification_status.value}")
         payment.verified_by_user_id = verifier_id
         payment.verified_at = datetime.now(timezone.utc)
         if approve:
             payment.verification_status = PaymentVerificationStatus.VERIFIED
             payment.rejection_reason = None
             invoice = self.get_invoice_or_404(tenant_id, payment.invoice_id)
-            verified_total = self.payments.sum_verified_for_invoice(tenant_id, payment.invoice_id)
-            if verified_total >= float(invoice.net_amount):
-                invoice.status = InvoiceStatus.PAID
+            self.sync_paid_state(tenant_id, invoice)
         else:
             payment.verification_status = PaymentVerificationStatus.REJECTED
             payment.rejection_reason = rejection_reason
@@ -419,8 +461,12 @@ class FeeService:
         (before the outcome is known) and returns the signed pp_* fields the frontend renders as
         a hidden auto-submitting form POSTed to JazzCash's checkout page."""
         invoice = self.get_invoice_or_404(tenant_id, invoice_id)
-        if invoice.status == InvoiceStatus.PAID:
+        if invoice.status in (InvoiceStatus.PAID, InvoiceStatus.WAIVED):
             raise ConflictError("This invoice is already paid")
+        # Only the outstanding balance is charged, so a partially-paid invoice isn't overpaid.
+        balance = round(float(invoice.net_amount) - float(invoice.amount_paid or 0), 2)
+        if balance <= 0:
+            raise ConflictError("This invoice has no outstanding balance")
         if not self.jazzcash.is_configured():
             raise ConflictError("JazzCash is not configured on this server yet")
 
@@ -432,14 +478,14 @@ class FeeService:
                 initiated_by_user_id=initiated_by_user_id,
                 gateway=PaymentGateway.JAZZCASH,
                 txn_ref_no=txn_ref_no,
-                amount=invoice.net_amount,
+                amount=balance,
             )
         )
         self.db.commit()
 
         fields = self.jazzcash.build_checkout_fields(
             txn_ref_no=txn_ref_no,
-            amount_pkr=float(invoice.net_amount),
+            amount_pkr=balance,
             bill_reference=invoice.invoice_number,
             description=f"Invoice {invoice.invoice_number}",
         )
@@ -491,9 +537,7 @@ class FeeService:
                 )
             )
             invoice = self.get_invoice_or_404(txn.tenant_id, txn.invoice_id)
-            verified_total = self.payments.sum_verified_for_invoice(txn.tenant_id, txn.invoice_id)
-            if verified_total >= float(invoice.net_amount):
-                invoice.status = InvoiceStatus.PAID
+            self.sync_paid_state(txn.tenant_id, invoice)
             txn.payment_id = payment.id
             txn.status = GatewayTransactionStatus.COMPLETED
         else:

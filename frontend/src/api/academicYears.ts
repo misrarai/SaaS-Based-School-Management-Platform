@@ -22,3 +22,19 @@ export function updateAcademicYear(
 ) {
   return apiClient.patch<AcademicYear>(`/academic-years/${id}`, payload).then((res) => res.data);
 }
+
+export interface PromoteStudentsResult {
+  students_promoted: number;
+  students_graduated: number;
+  promoted_by_class: { class_name: string; students_moved: number }[];
+  graduated_classes: string[];
+}
+
+export function promoteStudents(fromAcademicYearId: string, toAcademicYearId: string) {
+  return apiClient
+    .post<PromoteStudentsResult>("/academic-years/promote", {
+      from_academic_year_id: fromAcademicYearId,
+      to_academic_year_id: toAcademicYearId,
+    })
+    .then((res) => res.data);
+}

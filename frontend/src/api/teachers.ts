@@ -32,3 +32,10 @@ export function createTeacher(payload: TeacherCreatePayload) {
 export function setTeacherActive(teacherId: string, isActive: boolean) {
   return apiClient.patch<Teacher>(`/teachers/${teacherId}`, { is_active: isActive }).then((res) => res.data);
 }
+
+export function updateTeacher(
+  teacherId: string,
+  payload: { full_name?: string; phone_number?: string | null; qualification?: string | null; is_active?: boolean },
+) {
+  return apiClient.patch<Teacher>(`/teachers/${teacherId}`, payload).then((res) => res.data);
+}
