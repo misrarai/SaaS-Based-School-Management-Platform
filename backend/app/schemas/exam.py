@@ -264,3 +264,21 @@ class MyExamOut(BaseModel):
     grade: str | None = None
     position: int | None = None
     passed: bool | None = None
+
+
+# ---------- Admit cards ----------
+
+
+class AdmitCardRow(BaseModel):
+    student_id: uuid.UUID
+    full_name: str
+    roll_number: str | None
+    admission_number: str | None
+    section_id: uuid.UUID | None
+    eligible: bool
+    hold_reason: str | None
+
+
+class AdmitCardHoldRequest(BaseModel):
+    student_id: uuid.UUID
+    reason: str = Field(min_length=1, max_length=255)

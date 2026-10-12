@@ -39,6 +39,12 @@ from app.schemas.library import (
     ReservationOut,
     ReturnByCopyRequest,
     ReturnRequest,
+    CopyWithBookOut,
+    StockAuditCreate,
+    StockAuditDetailOut,
+    StockAuditOut,
+    StockAuditScanRequest,
+    StockAuditScanResult,
 )
 from app.services.library_service import LibraryService
 
@@ -306,3 +312,49 @@ def report_most_issued(
     db: Session = Depends(get_db),
 ):
     return LibraryService(db).most_issued(current_user.tenant_id, limit, date_from, date_to)
+
+
+# ---------- Copies (global list) ----------
+
+
+@router.get("/copies", response_model=list[CopyWithBookOut])
+def list_all_copies(
+    status_filter: str | None = Query(default=None, alias="status"),
+    q: str | None = Query(default=None),
+    current_user: User = Depends(ADMIN),
+    db: Session = Depends(get_db),
+):
+    return LibraryService(db).list_copies(current_user.tenant_id, status=status_filter, q=q)
+
+
+# ---------- Stock audit (stock-take) ----------
+
+
+@router.get("/stocktakes", response_model=list[StockAuditOut])
+def list_stocktakes(current_user: User = Depends(ADMIN), db: Session = Depends(get_db)):
+    return LibraryService(db).list_stock_audits(current_user.tenant_id)
+
+
+@router.post("/stocktakes", response_model=StockAuditOut, status_code=status.HTTP_201_CREATED)
+def create_stocktake(payload: StockAuditCreate, current_user: User = Depends(ADMIN), db: Session = Depends(get_db)):
+    return LibraryService(db).create_stock_audit(current_user.tenant_id, payload, current_user.id)
+
+
+@router.get("/stocktakes/{audit_id}", response_model=StockAuditDetailOut)
+def get_stocktake(audit_id: uuid.UUID, current_user: User = Depends(ADMIN), db: Session = Depends(get_db)):
+    return LibraryService(db).stock_audit_detail(current_user.tenant_id, audit_id)
+
+
+@router.post("/stocktakes/{audit_id}/scan", response_model=StockAuditScanResult)
+def scan_stocktake(
+    audit_id: uuid.UUID,
+    payload: StockAuditScanRequest,
+    current_user: User = Depends(ADMIN),
+    db: Session = Depends(get_db),
+):
+    return LibraryService(db).scan_stock_audit(current_user.tenant_id, audit_id, payload.copy_identifier)
+
+
+@router.post("/stocktakes/{audit_id}/complete", response_model=StockAuditOut)
+def complete_stocktake(audit_id: uuid.UUID, current_user: User = Depends(ADMIN), db: Session = Depends(get_db)):
+    return LibraryService(db).complete_stock_audit(current_user.tenant_id, audit_id)

@@ -110,8 +110,22 @@ from app.models.library import (  # noqa: F401
 )
 
 from app.models.exam import Exam, ExamClass, ExamMark, ExamSchedule, ExamStudentRemark, GradingBand, GradingScheme
+from app.models.automation import AutomationRule, AutomationRun  # noqa: F401
+from app.models.hifz import Halqa, HifzDailyRecord, HifzEnrolment  # noqa: F401
+from app.models.promotion import PromotionRule  # noqa: F401
+from app.models.recruitment import JobApplication, JobVacancy  # noqa: F401
+from app.models.holiday import Holiday  # noqa: F401
 
 __all__ = [
+    "AutomationRule",
+    "AutomationRun",
+    "Halqa",
+    "HifzDailyRecord",
+    "HifzEnrolment",
+    "Holiday",
+    "JobApplication",
+    "JobVacancy",
+    "PromotionRule",
     "Exam",
     "ExamClass",
     "ExamMark",

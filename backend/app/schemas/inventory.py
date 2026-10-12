@@ -274,3 +274,64 @@ class AssetOut(BaseModel):
     accumulated_depreciation: float
     book_value: float
     annual_depreciation: float
+
+
+# ---------- Requisitions ----------
+
+
+class RequisitionLineIn(BaseModel):
+    item_id: uuid.UUID
+    quantity_requested: float = Field(gt=0)
+
+
+class RequisitionCreate(BaseModel):
+    department: str = Field(min_length=1, max_length=150)
+    requested_by: str | None = Field(default=None, max_length=150)
+    requisition_date: date | None = None
+    notes: str | None = None
+    lines: list[RequisitionLineIn] = Field(min_length=1)
+
+
+class RequisitionApproveLine(BaseModel):
+    line_id: uuid.UUID
+    quantity_approved: float = Field(ge=0)
+
+
+class RequisitionApprove(BaseModel):
+    # optional per-line overrides; omitted lines are approved at requested quantity
+    lines: list[RequisitionApproveLine] = Field(default_factory=list)
+
+
+class RequisitionReject(BaseModel):
+    reason: str = Field(min_length=1, max_length=255)
+
+
+class RequisitionIssue(BaseModel):
+    store_id: uuid.UUID
+
+
+class RequisitionLineOut(BaseModel):
+    id: uuid.UUID
+    item_id: uuid.UUID
+    item_name: str | None
+    item_code: str | None
+    quantity_requested: float
+    quantity_approved: float | None
+
+    model_config = {"from_attributes": True}
+
+
+class RequisitionOut(BaseModel):
+    id: uuid.UUID
+    requisition_number: str
+    department: str
+    requested_by: str | None
+    requisition_date: date
+    status: str
+    notes: str | None
+    reject_reason: str | None
+    store_id: uuid.UUID | None
+    issued_txn_id: uuid.UUID | None
+    lines: list[RequisitionLineOut]
+
+    model_config = {"from_attributes": True}

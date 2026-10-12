@@ -11,6 +11,8 @@ from app.models.library import (
     BookReservation,
     LibraryMember,
     LibrarySettings,
+    StockAudit,
+    StockAuditScan,
 )
 from app.repositories.base import BaseRepository
 
@@ -79,6 +81,19 @@ class BookCopyRepository(BaseRepository[BookCopy]):
             .order_by(BookCopy.accession_number)
         )
         return list(self.db.execute(stmt).scalars().all())
+
+    def list_all(self, tenant_id: uuid.UUID, status: str | None = None, q: str | None = None) -> list[BookCopy]:
+        stmt = select(BookCopy).where(BookCopy.tenant_id == tenant_id)
+        if status:
+            stmt = stmt.where(BookCopy.status == status)
+        if q:
+            like = f"%{q}%"
+            stmt = stmt.where(or_(BookCopy.accession_number.ilike(like), BookCopy.barcode.ilike(like)))
+        return list(self.db.execute(stmt.order_by(BookCopy.accession_number)).scalars().all())
+
+    def all_ids(self, tenant_id: uuid.UUID) -> list[uuid.UUID]:
+        stmt = select(BookCopy.id).where(BookCopy.tenant_id == tenant_id)
+        return [row[0] for row in self.db.execute(stmt).all()]
 
     def status_counts(self, tenant_id: uuid.UUID, book_ids: list[uuid.UUID] | None = None) -> dict[uuid.UUID, dict[str, int]]:
         stmt = (
@@ -305,3 +320,39 @@ class BookReservationRepository(BaseRepository[BookReservation]):
             BookReservation.expires_on < today,
         )
         return list(self.db.execute(stmt).scalars().all())
+
+
+class StockAuditRepository(BaseRepository[StockAudit]):
+    model = StockAudit
+
+    def list_recent(self, tenant_id: uuid.UUID) -> list[StockAudit]:
+        stmt = (
+            select(StockAudit)
+            .where(StockAudit.tenant_id == tenant_id)
+            .order_by(StockAudit.started_at.desc())
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
+
+class StockAuditScanRepository(BaseRepository[StockAuditScan]):
+    model = StockAuditScan
+
+    def scanned_copy_ids(self, tenant_id: uuid.UUID, audit_id: uuid.UUID) -> list[uuid.UUID]:
+        stmt = select(StockAuditScan.copy_id).where(
+            StockAuditScan.tenant_id == tenant_id, StockAuditScan.audit_id == audit_id
+        )
+        return [row[0] for row in self.db.execute(stmt).all()]
+
+    def exists(self, tenant_id: uuid.UUID, audit_id: uuid.UUID, copy_id: uuid.UUID) -> bool:
+        stmt = select(StockAuditScan.id).where(
+            StockAuditScan.tenant_id == tenant_id,
+            StockAuditScan.audit_id == audit_id,
+            StockAuditScan.copy_id == copy_id,
+        )
+        return self.db.execute(stmt).first() is not None
+
+    def count_for_audit(self, tenant_id: uuid.UUID, audit_id: uuid.UUID) -> int:
+        stmt = select(func.count(StockAuditScan.id)).where(
+            StockAuditScan.tenant_id == tenant_id, StockAuditScan.audit_id == audit_id
+        )
+        return int(self.db.execute(stmt).scalar_one())

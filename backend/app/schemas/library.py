@@ -292,3 +292,57 @@ class LibrarySummaryOut(BaseModel):
     overdue_count: int
     pending_reservations: int
     outstanding_fines: float
+
+
+# ---------- Copies (global list) ----------
+
+
+class CopyWithBookOut(BaseModel):
+    id: uuid.UUID
+    book_id: uuid.UUID
+    book_title: str | None
+    book_author: str | None
+    accession_number: str
+    barcode: str | None
+    status: str
+    notes: str | None
+
+    model_config = {"from_attributes": True}
+
+
+# ---------- Stock audit (stock-take) ----------
+
+
+class StockAuditCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=150)
+    notes: str | None = None
+
+
+class StockAuditScanRequest(BaseModel):
+    copy_identifier: str = Field(min_length=1, max_length=100)  # accession number or barcode
+
+
+class StockAuditOut(BaseModel):
+    id: uuid.UUID
+    name: str
+    status: str
+    started_at: datetime
+    completed_at: datetime | None
+    total_expected: int
+    total_seen: int
+    total_missing: int
+    notes: str | None
+
+    model_config = {"from_attributes": True}
+
+
+class StockAuditScanResult(BaseModel):
+    ok: bool
+    message: str
+    seen_count: int
+    scanned_copy: CopyWithBookOut | None = None
+
+
+class StockAuditDetailOut(StockAuditOut):
+    seen_copies: list[CopyWithBookOut]
+    missing_copies: list[CopyWithBookOut]

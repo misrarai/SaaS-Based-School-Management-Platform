@@ -10,9 +10,11 @@ from app.core.gate_pass_pdf import render_gate_pass
 from app.models.academic import ClassGrade
 from app.models.front_office import (
     AdmissionEnquiry,
+    Appointment,
     Complaint,
     EnquiryFollowUp,
     GatePass,
+    LostFoundItem,
     PhoneCallLog,
     PostalRecord,
     VisitorLog,
@@ -22,9 +24,11 @@ from app.repositories.academic_repo import ClassGradeRepository, SectionReposito
 from app.repositories.base import BaseRepository
 from app.repositories.front_office_repo import (
     AdmissionEnquiryRepository,
+    AppointmentRepository,
     ComplaintRepository,
     EnquiryFollowUpRepository,
     GatePassRepository,
+    LostFoundRepository,
     PhoneCallLogRepository,
     PostalRecordRepository,
     VisitorLogRepository,
@@ -32,6 +36,8 @@ from app.repositories.front_office_repo import (
 from app.repositories.student_repo import StudentProfileRepository
 from app.repositories.tenant_repo import TenantRepository
 from app.schemas.front_office import (
+    AppointmentCreate,
+    AppointmentUpdate,
     CallCreate,
     CallUpdate,
     ComplaintCreate,
@@ -41,8 +47,11 @@ from app.schemas.front_office import (
     EnquirySummary,
     EnquiryUpdate,
     FollowUpCreate,
+    FrontOfficeDashboard,
     GatePassCreate,
     GatePassOut,
+    LostFoundCreate,
+    LostFoundUpdate,
     PostalCreate,
     PostalUpdate,
     StudentLookupOut,
@@ -69,6 +78,8 @@ class FrontOfficeService:
         self.postal = PostalRecordRepository(db)
         self.gate_passes = GatePassRepository(db)
         self.calls = PhoneCallLogRepository(db)
+        self.appointments = AppointmentRepository(db)
+        self.lost_found = LostFoundRepository(db)
         self.students = StudentProfileRepository(db)
         self.classes = ClassGradeRepository(db)
         self.sections = SectionRepository(db)
@@ -144,6 +155,24 @@ class FrontOfficeService:
             converted=counts.get("converted", 0),
             closed=counts.get("closed", 0),
             due_follow_ups_today=self.enquiries.count_due_follow_ups(tenant_id, _today()),
+        )
+
+    def dashboard(self, tenant_id: uuid.UUID) -> FrontOfficeDashboard:
+        today = _today()
+        enquiry_counts = self.enquiries.count_by_status(tenant_id)
+        return FrontOfficeDashboard(
+            visitors_today=self.visitors.count(tenant_id, day=today),
+            visitors_inside=self.visitors.count(tenant_id, inside_only=True),
+            gate_passes_today=self.gate_passes.count(tenant_id, day=today),
+            calls_today=self.calls.count(tenant_id, day=today),
+            parcels_today=self.postal.count(tenant_id, day=today),
+            complaints_open=self.complaints.count(tenant_id, status="open"),
+            complaints_total=self.complaints.count(tenant_id),
+            enquiries_new=enquiry_counts.get("new", 0),
+            enquiries_follow_up_due=self.enquiries.count_due_follow_ups(tenant_id, today),
+            enquiries_total=sum(enquiry_counts.values()),
+            recent_visitors=self.visitors.search(tenant_id, day=today)[:5],
+            open_complaints=self.complaints.search(tenant_id, status="open")[:5],
         )
 
     def add_follow_up(
@@ -271,6 +300,40 @@ class FrontOfficeService:
 
     def delete_call(self, tenant_id: uuid.UUID, call_id: uuid.UUID) -> None:
         self._delete(self.calls, tenant_id, call_id, "Call log")
+
+    # ---------- appointments ----------
+
+    def create_appointment(self, tenant_id: uuid.UUID, payload: AppointmentCreate) -> Appointment:
+        data = payload.model_dump()
+        data["appointment_date"] = data.get("appointment_date") or _today()
+        return self._save(self.appointments, Appointment(tenant_id=tenant_id, **data))
+
+    def list_appointments(self, tenant_id: uuid.UUID, **filters) -> list[Appointment]:
+        return self.appointments.search(tenant_id, **filters)
+
+    def update_appointment(
+        self, tenant_id: uuid.UUID, appointment_id: uuid.UUID, payload: AppointmentUpdate
+    ) -> Appointment:
+        return self._apply_update(self._get(self.appointments, tenant_id, appointment_id, "Appointment"), payload)
+
+    def delete_appointment(self, tenant_id: uuid.UUID, appointment_id: uuid.UUID) -> None:
+        self._delete(self.appointments, tenant_id, appointment_id, "Appointment")
+
+    # ---------- lost & found ----------
+
+    def create_lost_found(self, tenant_id: uuid.UUID, payload: LostFoundCreate) -> LostFoundItem:
+        data = payload.model_dump()
+        data["item_date"] = data.get("item_date") or _today()
+        return self._save(self.lost_found, LostFoundItem(tenant_id=tenant_id, **data))
+
+    def list_lost_found(self, tenant_id: uuid.UUID, **filters) -> list[LostFoundItem]:
+        return self.lost_found.search(tenant_id, **filters)
+
+    def update_lost_found(self, tenant_id: uuid.UUID, item_id: uuid.UUID, payload: LostFoundUpdate) -> LostFoundItem:
+        return self._apply_update(self._get(self.lost_found, tenant_id, item_id, "Lost & found item"), payload)
+
+    def delete_lost_found(self, tenant_id: uuid.UUID, item_id: uuid.UUID) -> None:
+        self._delete(self.lost_found, tenant_id, item_id, "Lost & found item")
 
     # ---------- gate passes ----------
 

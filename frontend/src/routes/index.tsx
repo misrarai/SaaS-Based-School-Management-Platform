@@ -39,6 +39,50 @@ import { CoursesPage } from "../features/admin/academics/CoursesPage";
 import { ChartOfAccountsPage } from "../features/admin/accounting/ChartOfAccountsPage";
 import { IncomeExpensePage } from "../features/admin/accounting/IncomeExpensePage";
 import { VouchersPage } from "../features/admin/accounting/VouchersPage";
+import { FrontDeskDashboardPage } from "../features/admin/front-office/FrontDeskDashboardPage";
+import { ComingSoonPage } from "../features/admin/ComingSoonPage";
+import { AppointmentsPage } from "../features/admin/front-office/AppointmentsPage";
+import { LostFoundPage } from "../features/admin/front-office/LostFoundPage";
+import { FrontDeskReportsPage } from "../features/admin/front-office/FrontDeskReportsPage";
+import { AdminLiveClassesPage } from "../features/admin/lms/LiveClassesPage";
+import { VideoLecturesPage } from "../features/admin/lms/VideoLecturesPage";
+import { AdminAssignmentsPage } from "../features/admin/lms/AssignmentsPage";
+import { AdminQuizzesPage } from "../features/admin/lms/QuizzesPage";
+import { LmsReportsPage } from "../features/admin/lms/ReportsPage";
+import { LibraryDashboardPage } from "../features/admin/library/LibraryDashboardPage";
+import { BookItemsPage } from "../features/admin/library/BookItemsPage";
+import { QuickScanPage } from "../features/admin/library/QuickScanPage";
+import { StockAuditPage } from "../features/admin/library/StockAuditPage";
+import { LibraryReportsPage } from "../features/admin/library/LibraryReportsPage";
+import { ExamDashboardPage } from "../features/admin/exams/ExamDashboardPage";
+import { AdmitCardsPage } from "../features/admin/exams/AdmitCardsPage";
+import { PrintReportsPage } from "../features/admin/exams/PrintReportsPage";
+import { NoticesPage } from "../features/admin/communication/NoticesPage";
+import { DiaryPage } from "../features/admin/communication/DiaryPage";
+import { MessagesPage } from "../features/admin/communication/MessagesPage";
+import { EventsPage } from "../features/admin/communication/EventsPage";
+import { TodosPage } from "../features/admin/communication/TodosPage";
+import { SendSmsPage } from "../features/admin/communication/SendSmsPage";
+import { InventoryDashboardPage } from "../features/admin/inventory/InventoryDashboardPage";
+import { CatalogPage } from "../features/admin/inventory/CatalogPage";
+import { StockPage } from "../features/admin/inventory/StockPage";
+import { AssetsPage } from "../features/admin/inventory/AssetsPage";
+import { InventoryReportsPage } from "../features/admin/inventory/ReportsPage";
+import { RequisitionsPage } from "../features/admin/inventory/RequisitionsPage";
+import { PayRunsPage } from "../features/admin/payroll/PayRunsPage";
+import { AdvancesPage } from "../features/admin/payroll/AdvancesPage";
+import { SaleTerminalPage } from "../features/admin/pos/SaleTerminalPage";
+import { PosDashboardPage } from "../features/admin/pos/PosDashboardPage";
+import { PosReportsPage } from "../features/admin/pos/PosReportsPage";
+import { AutomationPage } from "../features/admin/settings/AutomationPage";
+import { HalqasPage } from "../features/admin/hifz/HalqasPage";
+import { EnrolmentsPage } from "../features/admin/hifz/EnrolmentsPage";
+import { PromotionPage } from "../features/admin/settings/PromotionPage";
+import { DonorsPage } from "../features/admin/hifz/DonorsPage";
+import { SponsorshipsPage } from "../features/admin/hifz/SponsorshipsPage";
+import { DownloadCenterPage } from "../features/admin/downloads/DownloadCenterPage";
+import { RecruitmentPage } from "../features/admin/hr/RecruitmentPage";
+import { HolidayCalendarPage } from "../features/admin/attendance/HolidayCalendarPage";
 import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
 import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
 import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
@@ -378,6 +422,102 @@ export function AppRoutes() {
         }
       />
       <Route
+        path="/admin/soon/:slug"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <ComingSoonPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/live-classes"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminLiveClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/lectures"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <VideoLecturesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/assignments"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminAssignmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/quizzes"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminQuizzesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/reports"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LmsReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/library/dashboard"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LibraryDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/library/items"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <BookItemsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/library/scan"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <QuickScanPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/library/stocktake"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <StockAuditPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/library/reports"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LibraryReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <FrontDeskDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/admin/front-office/enquiries"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
@@ -422,6 +562,30 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <CallLogPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/appointments"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AppointmentsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/lost-found"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <LostFoundPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/front-office/reports"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <FrontDeskReportsPage />
           </ProtectedRoute>
         }
       />
@@ -746,6 +910,36 @@ export function AppRoutes() {
         }
       />
       {examsAdminRoutes.map((route) => <Route key={route.path} {...route} />)}
+      <Route path="/admin/exams/dashboard" element={<ProtectedRoute allowedRoles={["admin"]}><ExamDashboardPage /></ProtectedRoute>} />
+      <Route path="/admin/exams/admit-cards" element={<ProtectedRoute allowedRoles={["admin"]}><AdmitCardsPage /></ProtectedRoute>} />
+      <Route path="/admin/exams/print" element={<ProtectedRoute allowedRoles={["admin"]}><PrintReportsPage /></ProtectedRoute>} />
+      <Route path="/admin/communication/notices" element={<ProtectedRoute allowedRoles={["admin"]}><NoticesPage /></ProtectedRoute>} />
+      <Route path="/admin/communication/diary" element={<ProtectedRoute allowedRoles={["admin"]}><DiaryPage /></ProtectedRoute>} />
+      <Route path="/admin/communication/messages" element={<ProtectedRoute allowedRoles={["admin"]}><MessagesPage /></ProtectedRoute>} />
+      <Route path="/admin/communication/events" element={<ProtectedRoute allowedRoles={["admin"]}><EventsPage /></ProtectedRoute>} />
+      <Route path="/admin/communication/todos" element={<ProtectedRoute allowedRoles={["admin"]}><TodosPage /></ProtectedRoute>} />
+      <Route path="/admin/communication/sms" element={<ProtectedRoute allowedRoles={["admin"]}><SendSmsPage /></ProtectedRoute>} />
+      <Route path="/admin/inventory/dashboard" element={<ProtectedRoute allowedRoles={["admin"]}><InventoryDashboardPage /></ProtectedRoute>} />
+      <Route path="/admin/inventory/catalog" element={<ProtectedRoute allowedRoles={["admin"]}><CatalogPage /></ProtectedRoute>} />
+      <Route path="/admin/inventory/stock" element={<ProtectedRoute allowedRoles={["admin"]}><StockPage /></ProtectedRoute>} />
+      <Route path="/admin/inventory/assets" element={<ProtectedRoute allowedRoles={["admin"]}><AssetsPage /></ProtectedRoute>} />
+      <Route path="/admin/inventory/reports" element={<ProtectedRoute allowedRoles={["admin"]}><InventoryReportsPage /></ProtectedRoute>} />
+      <Route path="/admin/inventory/requisitions" element={<ProtectedRoute allowedRoles={["admin"]}><RequisitionsPage /></ProtectedRoute>} />
+      <Route path="/admin/payroll/runs" element={<ProtectedRoute allowedRoles={["admin"]}><PayRunsPage /></ProtectedRoute>} />
+      <Route path="/admin/payroll/advances" element={<ProtectedRoute allowedRoles={["admin"]}><AdvancesPage /></ProtectedRoute>} />
+      <Route path="/admin/pos/dashboard" element={<ProtectedRoute allowedRoles={["admin"]}><PosDashboardPage /></ProtectedRoute>} />
+      <Route path="/admin/pos/sale" element={<ProtectedRoute allowedRoles={["admin"]}><SaleTerminalPage /></ProtectedRoute>} />
+      <Route path="/admin/pos/reports" element={<ProtectedRoute allowedRoles={["admin"]}><PosReportsPage /></ProtectedRoute>} />
+      <Route path="/admin/settings/automation" element={<ProtectedRoute allowedRoles={["admin"]}><AutomationPage /></ProtectedRoute>} />
+      <Route path="/admin/hifz/halqas" element={<ProtectedRoute allowedRoles={["admin"]}><HalqasPage /></ProtectedRoute>} />
+      <Route path="/admin/hifz/enrolments" element={<ProtectedRoute allowedRoles={["admin"]}><EnrolmentsPage /></ProtectedRoute>} />
+      <Route path="/admin/settings/promotion" element={<ProtectedRoute allowedRoles={["admin"]}><PromotionPage /></ProtectedRoute>} />
+      <Route path="/admin/hifz/donors" element={<ProtectedRoute allowedRoles={["admin"]}><DonorsPage /></ProtectedRoute>} />
+      <Route path="/admin/hifz/sponsorships" element={<ProtectedRoute allowedRoles={["admin"]}><SponsorshipsPage /></ProtectedRoute>} />
+      <Route path="/admin/downloads" element={<ProtectedRoute allowedRoles={["admin"]}><DownloadCenterPage /></ProtectedRoute>} />
+      <Route path="/admin/hr/recruitment" element={<ProtectedRoute allowedRoles={["admin"]}><RecruitmentPage /></ProtectedRoute>} />
+      <Route path="/admin/attendance/holidays" element={<ProtectedRoute allowedRoles={["admin"]}><HolidayCalendarPage /></ProtectedRoute>} />
+
       {examsTeacherRoutes.map((route) => <Route key={route.path} {...route} />)}
       {examsStudentRoutes.map((route) => <Route key={route.path} {...route} />)}
       {examsParentRoutes.map((route) => <Route key={route.path} {...route} />)}

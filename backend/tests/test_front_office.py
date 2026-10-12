@@ -171,3 +171,92 @@ def test_front_office_is_admin_only_and_tenant_scoped(client):
     other = auth_headers(onboard_and_login_admin(client, slug="riverside"))
     assert client.get(f"{BASE}/enquiries/{enquiry['id']}", headers=other).status_code == 404
     assert client.get(f"{BASE}/enquiries", headers=other).json() == []
+
+
+def test_front_office_dashboard_aggregates_registers(client):
+    headers = auth_headers(onboard_and_login_admin(client))
+
+    # empty state
+    empty = client.get(f"{BASE}/dashboard", headers=headers).json()
+    assert empty["visitors_today"] == 0 and empty["complaints_open"] == 0
+    assert empty["recent_visitors"] == [] and empty["open_complaints"] == []
+
+    # two visitors (one still inside), one open complaint, one new enquiry
+    v = client.post(
+        f"{BASE}/visitors",
+        json={"visitor_name": "Kamran", "purpose": "Meet principal", "number_of_persons": 1},
+        headers=headers,
+    ).json()
+    client.post(
+        f"{BASE}/visitors",
+        json={"visitor_name": "Sara", "purpose": "Admission query"},
+        headers=headers,
+    )
+    client.post(f"{BASE}/visitors/{v['id']}/check-out", json={}, headers=headers)
+    client.post(
+        f"{BASE}/complaints",
+        json={"complainant_name": "Mr. Ali", "complaint_type": "Transport", "description": "Van late"},
+        headers=headers,
+    )
+    client.post(f"{BASE}/enquiries", json={"student_name": "Ayesha"}, headers=headers)
+
+    data = client.get(f"{BASE}/dashboard", headers=headers).json()
+    assert data["visitors_today"] == 2
+    assert data["visitors_inside"] == 1
+    assert data["complaints_open"] == 1 and data["complaints_total"] == 1
+    assert data["enquiries_new"] == 1 and data["enquiries_total"] == 1
+    assert len(data["recent_visitors"]) == 2
+    assert len(data["open_complaints"]) == 1
+
+
+def test_front_office_dashboard_is_admin_only(client):
+    admin_headers = auth_headers(onboard_and_login_admin(client))
+    teacher_headers = _teacher_headers(client, admin_headers)
+    assert client.get(f"{BASE}/dashboard", headers=teacher_headers).status_code == 403
+
+
+def test_appointments_crud_and_filter(client):
+    headers = auth_headers(onboard_and_login_admin(client))
+    r = client.post(
+        f"{BASE}/appointments",
+        json={"visitor_name": "Mr. Khan", "purpose": "Meet principal", "with_whom": "Principal", "appointment_date": "2026-10-20", "appointment_time": "10:30"},
+        headers=headers,
+    )
+    assert r.status_code == 201, r.text
+    appt = r.json()
+    assert appt["status"] == "scheduled" and appt["appointment_time"] == "10:30"
+
+    client.post(f"{BASE}/appointments", json={"visitor_name": "Ms. Ali", "purpose": "Admission", "appointment_date": "2026-10-21"}, headers=headers)
+    assert len(client.get(f"{BASE}/appointments", headers=headers).json()) == 2
+    assert len(client.get(f"{BASE}/appointments?date=2026-10-20", headers=headers).json()) == 1
+
+    done = client.patch(f"{BASE}/appointments/{appt['id']}", json={"status": "completed"}, headers=headers)
+    assert done.json()["status"] == "completed"
+    assert len(client.get(f"{BASE}/appointments?status=scheduled", headers=headers).json()) == 1
+    assert client.delete(f"{BASE}/appointments/{appt['id']}", headers=headers).status_code == 204
+
+
+def test_lost_and_found_crud_and_filter(client):
+    headers = auth_headers(onboard_and_login_admin(client))
+    lost = client.post(
+        f"{BASE}/lost-found",
+        json={"kind": "lost", "item_name": "Water bottle", "location": "Playground", "reported_by": "Sara"},
+        headers=headers,
+    )
+    assert lost.status_code == 201, lost.text
+    found = client.post(f"{BASE}/lost-found", json={"kind": "found", "item_name": "Blue jacket", "location": "Library"}, headers=headers)
+    assert found.status_code == 201
+
+    assert len(client.get(f"{BASE}/lost-found", headers=headers).json()) == 2
+    assert len(client.get(f"{BASE}/lost-found?kind=found", headers=headers).json()) == 1
+
+    claimed = client.patch(f"{BASE}/lost-found/{found.json()['id']}", json={"status": "returned", "claimed_by": "Ahmed"}, headers=headers)
+    assert claimed.json()["status"] == "returned" and claimed.json()["claimed_by"] == "Ahmed"
+    assert len(client.get(f"{BASE}/lost-found?status=open", headers=headers).json()) == 1
+
+
+def test_appointments_lost_found_admin_only(client):
+    admin_headers = auth_headers(onboard_and_login_admin(client))
+    teacher_headers = _teacher_headers(client, admin_headers)
+    assert client.get(f"{BASE}/appointments", headers=teacher_headers).status_code == 403
+    assert client.get(f"{BASE}/lost-found", headers=teacher_headers).status_code == 403

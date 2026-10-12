@@ -323,3 +323,29 @@ export function downloadTabulationPdf(examId: string, classGradeId: string, sect
 export function downloadResultCard(examId: string, studentId: string) {
   return openPdf(`/exams/${examId}/students/${studentId}/result-card`, {}, "result-card.pdf");
 }
+
+// ---------- Admit cards ----------
+export interface AdmitCardRow {
+  student_id: string;
+  full_name: string;
+  roll_number: string | null;
+  admission_number: string | null;
+  section_id: string | null;
+  eligible: boolean;
+  hold_reason: string | null;
+}
+
+export function listAdmitCards(examId: string, classGradeId: string) {
+  return apiClient
+    .get<AdmitCardRow[]>(`/exams/${examId}/admit-cards`, { params: { class_grade_id: classGradeId } })
+    .then((r) => r.data);
+}
+export function holdAdmitCard(examId: string, studentId: string, reason: string) {
+  return apiClient.post(`/exams/${examId}/admit-cards/hold`, { student_id: studentId, reason });
+}
+export function releaseAdmitCard(examId: string, studentId: string) {
+  return apiClient.delete(`/exams/${examId}/admit-cards/hold/${studentId}`);
+}
+export function downloadAdmitCard(examId: string, studentId: string) {
+  return openPdf(`/exams/${examId}/admit-cards/${studentId}/pdf`, {}, "admit-card.pdf");
+}

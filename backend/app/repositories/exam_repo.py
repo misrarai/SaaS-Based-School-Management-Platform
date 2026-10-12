@@ -3,6 +3,7 @@ import uuid
 from sqlalchemy import delete, select
 
 from app.models.exam import (
+    AdmitCardHold,
     Exam,
     ExamClass,
     ExamMark,
@@ -180,3 +181,29 @@ class ExamStudentRemarkRepository(BaseRepository[ExamStudentRemark]):
             )
         )
         self.db.flush()
+
+
+class AdmitCardHoldRepository(BaseRepository[AdmitCardHold]):
+    model = AdmitCardHold
+
+    def list_for_exam(self, tenant_id: uuid.UUID, exam_id: uuid.UUID) -> list[AdmitCardHold]:
+        stmt = select(AdmitCardHold).where(
+            AdmitCardHold.tenant_id == tenant_id, AdmitCardHold.exam_id == exam_id
+        )
+        return list(self.db.execute(stmt).scalars().all())
+
+    def get(self, tenant_id: uuid.UUID, exam_id: uuid.UUID, student_id: uuid.UUID) -> AdmitCardHold | None:
+        stmt = select(AdmitCardHold).where(
+            AdmitCardHold.tenant_id == tenant_id,
+            AdmitCardHold.exam_id == exam_id,
+            AdmitCardHold.student_id == student_id,
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+
+    def delete_for(self, tenant_id: uuid.UUID, exam_id: uuid.UUID, student_id: uuid.UUID) -> bool:
+        obj = self.get(tenant_id, exam_id, student_id)
+        if obj is None:
+            return False
+        self.db.delete(obj)
+        self.db.flush()
+        return True

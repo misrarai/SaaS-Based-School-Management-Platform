@@ -124,3 +124,18 @@ class ExamStudentRemark(UUIDPKMixin, TimestampMixin, Base):
     exam_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("exams.id"), nullable=False, index=True)
     student_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("student_profiles.id"), nullable=False)
     remarks: Mapped[str] = mapped_column(String(500), nullable=False)
+
+
+class AdmitCardHold(UUIDPKMixin, TimestampMixin, Base):
+    """A reason a student is NOT eligible for an exam's admit card (e.g. unpaid dues).
+    Absence of a hold row = eligible. One hold per exam+student."""
+
+    __tablename__ = "exam_admit_card_holds"
+    __table_args__ = (UniqueConstraint("exam_id", "student_id", name="uq_admit_hold_exam_student"),)
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    exam_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("exams.id"), nullable=False, index=True)
+    student_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("student_profiles.id"), nullable=False, index=True
+    )
+    reason: Mapped[str] = mapped_column(String(255), nullable=False)

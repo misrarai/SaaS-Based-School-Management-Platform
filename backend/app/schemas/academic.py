@@ -55,14 +55,30 @@ class ClassGradeOut(BaseModel):
         return grade_band(self.level_order)
 
 
+class ClassGradeUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    level_order: int | None = None
+    academic_year_id: uuid.UUID | None = None
+
+
 class SectionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
+    class_teacher_id: uuid.UUID | None = None
+
+
+class SectionUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    class_teacher_id: uuid.UUID | None = None
+    # class_teacher_id=None is ambiguous between "leave alone" and "unassign"; this flag
+    # makes unassigning explicit.
+    clear_class_teacher: bool = False
 
 
 class SectionOut(BaseModel):
     id: uuid.UUID
     class_grade_id: uuid.UUID
     name: str
+    class_teacher_id: uuid.UUID | None = None
 
     model_config = {"from_attributes": True}
 
@@ -72,6 +88,11 @@ class SubjectCreate(BaseModel):
     code: str = Field(min_length=1, max_length=30)
 
 
+class SubjectUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    code: str | None = Field(default=None, min_length=1, max_length=30)
+
+
 class SubjectOut(BaseModel):
     id: uuid.UUID
     class_grade_id: uuid.UUID
@@ -79,6 +100,17 @@ class SubjectOut(BaseModel):
     code: str
 
     model_config = {"from_attributes": True}
+
+
+class SectionOverview(SectionOut):
+    class_teacher_name: str | None = None
+    student_count: int = 0
+
+
+class ClassOverview(ClassGradeOut):
+    student_count: int = 0
+    sections: list[SectionOverview] = []
+    subjects: list[SubjectOut] = []
 
 
 class PromoteStudentsRequest(BaseModel):

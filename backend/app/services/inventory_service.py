@@ -15,8 +15,10 @@ from app.models.inventory import (
     AssetStatus,
     FixedAsset,
     InventoryItem,
+    InventoryRequisition,
     InventoryUnit,
     ItemCategory,
+    RequisitionLine,
     StockMovement,
     StockTransaction,
     StockTransactionLine,
@@ -29,6 +31,7 @@ from app.repositories.inventory_repo import (
     AssetRepository,
     CategoryRepository,
     ItemRepository,
+    RequisitionRepository,
     StockRepository,
     StoreRepository,
     SupplierRepository,
@@ -47,6 +50,10 @@ from app.schemas.inventory import (
     ItemUpdate,
     LowStockRow,
     PurchaseCreate,
+    RequisitionApprove,
+    RequisitionCreate,
+    RequisitionIssue,
+    RequisitionReject,
     SaleCreate,
     StockLevel,
     StockLineIn,
@@ -89,6 +96,7 @@ class InventoryService:
         self.items = ItemRepository(db)
         self.stock = StockRepository(db)
         self.assets = AssetRepository(db)
+        self.requisitions = RequisitionRepository(db)
 
     def _add(self, obj):
         self.db.add(obj)
@@ -534,3 +542,121 @@ class InventoryService:
 
     def get_asset(self, tenant_id, asset_id) -> AssetOut:
         return self.asset_out(self._get(self.assets, tenant_id, asset_id, "Asset"))
+
+    # ================= Requisitions =================
+    def _req_number(self, tenant_id) -> str:
+        highest = 0
+        for n in self.requisitions.all_numbers(tenant_id):
+            tail = n[4:]
+            if n.startswith("REQ-") and tail.isdigit():
+                highest = max(highest, int(tail))
+        return f"REQ-{highest + 1:04d}"
+
+    def _req_out(self, tenant_id, req: InventoryRequisition) -> dict:
+        items = {i.id: i for i in self.items.list(tenant_id)}
+        return {
+            "id": req.id,
+            "requisition_number": req.requisition_number,
+            "department": req.department,
+            "requested_by": req.requested_by,
+            "requisition_date": req.requisition_date,
+            "status": req.status,
+            "notes": req.notes,
+            "reject_reason": req.reject_reason,
+            "store_id": req.store_id,
+            "issued_txn_id": req.issued_txn_id,
+            "lines": [
+                {
+                    "id": l.id,
+                    "item_id": l.item_id,
+                    "item_name": items[l.item_id].name if l.item_id in items else None,
+                    "item_code": items[l.item_id].code if l.item_id in items else None,
+                    "quantity_requested": float(l.quantity_requested),
+                    "quantity_approved": float(l.quantity_approved) if l.quantity_approved is not None else None,
+                }
+                for l in req.lines
+            ],
+        }
+
+    def list_requisitions(self, tenant_id, status=None) -> list[dict]:
+        return [self._req_out(tenant_id, r) for r in self.requisitions.list_filtered(tenant_id, status)]
+
+    def _get_req(self, tenant_id, req_id) -> InventoryRequisition:
+        req = self.requisitions.get_with_lines(tenant_id, req_id)
+        if req is None:
+            raise NotFoundError("Requisition not found")
+        return req
+
+    def get_requisition(self, tenant_id, req_id) -> dict:
+        return self._req_out(tenant_id, self._get_req(tenant_id, req_id))
+
+    def create_requisition(self, tenant_id, user_id, payload: RequisitionCreate) -> dict:
+        for line in payload.lines:
+            self._get(self.items, tenant_id, line.item_id, "Item")
+        req = InventoryRequisition(
+            tenant_id=tenant_id,
+            requisition_number=self._req_number(tenant_id),
+            department=payload.department,
+            requested_by=payload.requested_by,
+            requisition_date=payload.requisition_date or date.today(),
+            notes=payload.notes,
+            created_by_user_id=user_id,
+        )
+        for i, line in enumerate(payload.lines, start=1):
+            req.lines.append(RequisitionLine(
+                tenant_id=tenant_id, item_id=line.item_id, line_no=i, quantity_requested=line.quantity_requested,
+            ))
+        self._add(req)
+        self.db.commit()
+        return self._req_out(tenant_id, self._get_req(tenant_id, req.id))
+
+    def approve_requisition(self, tenant_id, user_id, req_id, payload: RequisitionApprove) -> dict:
+        req = self._get_req(tenant_id, req_id)
+        if req.status != "pending":
+            raise UnprocessableError("Only a pending requisition can be approved.")
+        overrides = {o.line_id: o.quantity_approved for o in payload.lines}
+        for line in req.lines:
+            line.quantity_approved = overrides.get(line.id, line.quantity_requested)
+        req.status = "approved"
+        req.decided_by_user_id = user_id
+        self.db.commit()
+        return self._req_out(tenant_id, self._get_req(tenant_id, req.id))
+
+    def reject_requisition(self, tenant_id, user_id, req_id, payload: RequisitionReject) -> dict:
+        req = self._get_req(tenant_id, req_id)
+        if req.status not in ("pending", "approved"):
+            raise UnprocessableError("This requisition can no longer be rejected.")
+        req.status = "rejected"
+        req.reject_reason = payload.reason
+        req.decided_by_user_id = user_id
+        self.db.commit()
+        return self._req_out(tenant_id, self._get_req(tenant_id, req.id))
+
+    def issue_requisition(self, tenant_id, user_id, req_id, payload: RequisitionIssue) -> dict:
+        req = self._get_req(tenant_id, req_id)
+        if req.status != "approved":
+            raise UnprocessableError("Only an approved requisition can be issued.")
+        lines = [
+            StockLineIn(item_id=l.item_id, quantity=float(l.quantity_approved))
+            for l in req.lines
+            if l.quantity_approved and float(l.quantity_approved) > 0
+        ]
+        if not lines:
+            raise UnprocessableError("Nothing to issue — all approved quantities are zero.")
+        txn = self.create_issue(
+            tenant_id,
+            user_id,
+            IssueCreate(
+                store_id=payload.store_id,
+                txn_date=date.today(),
+                issued_to_type="department",
+                issued_to=req.department,
+                notes=f"Requisition {req.requisition_number}",
+                lines=lines,
+            ),
+        )
+        req.status = "issued"
+        req.store_id = payload.store_id
+        req.issued_txn_id = txn.id
+        self.db.commit()
+        return self._req_out(tenant_id, self._get_req(tenant_id, req.id))

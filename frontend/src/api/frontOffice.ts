@@ -288,3 +288,89 @@ export function createCall(payload: PhoneCallPayload) {
 export function deleteCall(id: string) {
   return apiClient.delete(`${BASE}/calls/${id}`);
 }
+
+// ---------- Front-desk dashboard ----------
+export interface FrontOfficeDashboard {
+  visitors_today: number;
+  visitors_inside: number;
+  gate_passes_today: number;
+  calls_today: number;
+  parcels_today: number;
+  complaints_open: number;
+  complaints_total: number;
+  enquiries_new: number;
+  enquiries_follow_up_due: number;
+  enquiries_total: number;
+  recent_visitors: Visitor[];
+  open_complaints: Complaint[];
+}
+
+export function getFrontOfficeDashboard() {
+  return apiClient.get<FrontOfficeDashboard>(`${BASE}/dashboard`).then((r) => r.data);
+}
+
+// ---------- Appointments ----------
+export type AppointmentStatus = "scheduled" | "completed" | "cancelled" | "no_show";
+export interface Appointment {
+  id: string;
+  visitor_name: string;
+  phone: string | null;
+  purpose: string;
+  with_whom: string | null;
+  appointment_date: string;
+  appointment_time: string | null;
+  status: AppointmentStatus;
+  notes: string | null;
+}
+export type AppointmentPayload = Partial<Omit<Appointment, "id">>;
+
+export function listAppointments(params?: { status?: string; date?: string; q?: string }) {
+  return apiClient
+    .get<Appointment[]>(`${BASE}/appointments`, {
+      params: { status: params?.status || undefined, date: params?.date || undefined, q: params?.q || undefined },
+    })
+    .then((r) => r.data);
+}
+export function createAppointment(payload: AppointmentPayload) {
+  return apiClient.post<Appointment>(`${BASE}/appointments`, payload).then((r) => r.data);
+}
+export function updateAppointment(id: string, payload: AppointmentPayload) {
+  return apiClient.patch<Appointment>(`${BASE}/appointments/${id}`, payload).then((r) => r.data);
+}
+export function deleteAppointment(id: string) {
+  return apiClient.delete(`${BASE}/appointments/${id}`);
+}
+
+// ---------- Lost & Found ----------
+export type LostFoundKind = "lost" | "found";
+export type LostFoundStatus = "open" | "claimed" | "returned" | "disposed";
+export interface LostFoundItem {
+  id: string;
+  kind: LostFoundKind;
+  item_name: string;
+  description: string | null;
+  location: string | null;
+  reported_by: string | null;
+  item_date: string;
+  status: LostFoundStatus;
+  claimed_by: string | null;
+  notes: string | null;
+}
+export type LostFoundPayload = Partial<Omit<LostFoundItem, "id">>;
+
+export function listLostFound(params?: { kind?: string; status?: string; q?: string }) {
+  return apiClient
+    .get<LostFoundItem[]>(`${BASE}/lost-found`, {
+      params: { kind: params?.kind || undefined, status: params?.status || undefined, q: params?.q || undefined },
+    })
+    .then((r) => r.data);
+}
+export function createLostFound(payload: LostFoundPayload) {
+  return apiClient.post<LostFoundItem>(`${BASE}/lost-found`, payload).then((r) => r.data);
+}
+export function updateLostFound(id: string, payload: LostFoundPayload) {
+  return apiClient.patch<LostFoundItem>(`${BASE}/lost-found/${id}`, payload).then((r) => r.data);
+}
+export function deleteLostFound(id: string) {
+  return apiClient.delete(`${BASE}/lost-found/${id}`);
+}

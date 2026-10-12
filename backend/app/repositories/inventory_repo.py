@@ -6,6 +6,7 @@ from sqlalchemy.orm import selectinload
 from app.models.inventory import (
     FixedAsset,
     InventoryItem,
+    InventoryRequisition,
     InventoryUnit,
     ItemCategory,
     StockMovement,
@@ -100,3 +101,30 @@ class AssetRepository(BaseRepository[FixedAsset]):
     def get_by_tag(self, tenant_id: uuid.UUID, tag: str) -> FixedAsset | None:
         stmt = select(FixedAsset).where(FixedAsset.tenant_id == tenant_id, FixedAsset.asset_tag == tag)
         return self.db.execute(stmt).scalar_one_or_none()
+
+
+class RequisitionRepository(BaseRepository[InventoryRequisition]):
+    model = InventoryRequisition
+
+    def list_filtered(self, tenant_id: uuid.UUID, status: str | None = None) -> list[InventoryRequisition]:
+        stmt = (
+            select(InventoryRequisition)
+            .where(InventoryRequisition.tenant_id == tenant_id)
+            .options(selectinload(InventoryRequisition.lines))
+            .order_by(InventoryRequisition.requisition_date.desc(), InventoryRequisition.created_at.desc())
+        )
+        if status and status != "all":
+            stmt = stmt.where(InventoryRequisition.status == status)
+        return list(self.db.execute(stmt).scalars().all())
+
+    def get_with_lines(self, tenant_id: uuid.UUID, req_id: uuid.UUID) -> InventoryRequisition | None:
+        stmt = (
+            select(InventoryRequisition)
+            .where(InventoryRequisition.tenant_id == tenant_id, InventoryRequisition.id == req_id)
+            .options(selectinload(InventoryRequisition.lines))
+        )
+        return self.db.execute(stmt).scalar_one_or_none()
+
+    def all_numbers(self, tenant_id: uuid.UUID) -> list[str]:
+        stmt = select(InventoryRequisition.requisition_number).where(InventoryRequisition.tenant_id == tenant_id)
+        return [row[0] for row in self.db.execute(stmt).all()]

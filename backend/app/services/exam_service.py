@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core import exam_pdf_render
 from app.core.exceptions import ConflictError, DomainError, ForbiddenError, NotFoundError
 from app.models.exam import (
+    AdmitCardHold,
     Exam,
     ExamClass,
     ExamMark,
@@ -23,6 +24,7 @@ from app.repositories.academic_repo import (
     SubjectRepository,
 )
 from app.repositories.exam_repo import (
+    AdmitCardHoldRepository,
     ExamClassRepository,
     ExamMarkRepository,
     ExamRepository,
@@ -92,6 +94,7 @@ class ExamService:
         self.teachers = TeacherProfileRepository(db)
         self.class_schedules = ClassScheduleRepository(db)
         self.tenants = TenantRepository(db)
+        self.admit_holds = AdmitCardHoldRepository(db)
 
     # ------------------------------------------------------------------ grading schemes
     def _scheme_out(self, tenant_id: uuid.UUID, scheme: GradingScheme) -> dict:
@@ -411,6 +414,67 @@ class ExamService:
             rows=rows,
         )
 
+    # ------------------------------------------------------------------ admit cards
+
+    def list_admit_cards(self, tenant_id: uuid.UUID, exam_id: uuid.UUID, class_grade_id: uuid.UUID) -> list[dict]:
+        exam = self.get_exam(tenant_id, exam_id)
+        self._assert_exam_class(tenant_id, exam, class_grade_id)
+        holds = {h.student_id: h.reason for h in self.admit_holds.list_for_exam(tenant_id, exam_id)}
+        rows = []
+        for profile, student_user in self._class_students(tenant_id, exam_id, class_grade_id):
+            reason = holds.get(profile.id)
+            rows.append(
+                {
+                    "student_id": profile.id,
+                    "full_name": student_user.full_name,
+                    "roll_number": profile.roll_number,
+                    "admission_number": profile.admission_number,
+                    "section_id": profile.section_id,
+                    "eligible": reason is None,
+                    "hold_reason": reason,
+                }
+            )
+        return rows
+
+    def set_admit_hold(self, tenant_id: uuid.UUID, exam_id: uuid.UUID, student_id: uuid.UUID, reason: str) -> None:
+        exam = self.get_exam(tenant_id, exam_id)
+        existing = self.admit_holds.get(tenant_id, exam.id, student_id)
+        if existing is not None:
+            existing.reason = reason
+            self.db.flush()
+        else:
+            self.admit_holds.create(
+                AdmitCardHold(tenant_id=tenant_id, exam_id=exam.id, student_id=student_id, reason=reason)
+            )
+
+    def release_admit_hold(self, tenant_id: uuid.UUID, exam_id: uuid.UUID, student_id: uuid.UUID) -> None:
+        self.admit_holds.delete_for(tenant_id, exam_id, student_id)
+
+    def admit_card_pdf(self, tenant_id: uuid.UUID, exam_id: uuid.UUID, student_id: uuid.UUID) -> bytes:
+        exam = self.get_exam(tenant_id, exam_id)
+        found = self.students.get_with_user(tenant_id, student_id)
+        if found is None:
+            raise NotFoundError("Student not found")
+        profile, student_user = found
+        if self.admit_holds.get(tenant_id, exam.id, student_id) is not None:
+            raise DomainError("This student is on hold and is not eligible for an admit card.")
+        if profile.class_grade_id is None:
+            raise DomainError("Student is not assigned to a class.")
+        class_grade = self.class_grades.get_by_id(tenant_id, profile.class_grade_id)
+        section = self.sections.get_by_id(tenant_id, profile.section_id) if profile.section_id else None
+        rows = self.get_datesheet(tenant_id, exam.id, profile.class_grade_id)
+        return exam_pdf_render.render_admit_card(
+            tenant_name=self._tenant_name(tenant_id),
+            exam_name=exam.name,
+            academic_year=exam.academic_year,
+            class_name=class_grade.name if class_grade else "—",
+            student_name=student_user.full_name,
+            roll_number=profile.roll_number,
+            admission_number=profile.admission_number,
+            section_name=section.name if section else None,
+            rows=rows,
+        )
+
     # ------------------------------------------------------------------ access helpers
     def _tenant_name(self, tenant_id: uuid.UUID) -> str:
         tenant = self.tenants.get_by_id(tenant_id)
@@ -494,6 +558,16 @@ class ExamService:
         return profile.class_grade_id
 
     # ------------------------------------------------------------------ marks
+    def result_recipients(self, tenant_id: uuid.UUID, exam_id: uuid.UUID) -> list[tuple[uuid.UUID, str, str]]:
+        """(student_id, student_name, exam_name) for every student across the exam's classes —
+        used by the automation engine to notify parents when results are published."""
+        exam = self.get_exam(tenant_id, exam_id)
+        out: list[tuple[uuid.UUID, str, str]] = []
+        for class_id in self.exam_classes.list_class_ids(tenant_id, exam_id):
+            for profile, user in self._class_students(tenant_id, exam_id, class_id):
+                out.append((profile.id, user.full_name, exam.name))
+        return out
+
     def _class_students(
         self, tenant_id: uuid.UUID, exam_id: uuid.UUID, class_grade_id: uuid.UUID, section_id: uuid.UUID | None = None
     ) -> list[tuple[StudentProfile, User]]:

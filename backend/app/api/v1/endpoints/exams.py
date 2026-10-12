@@ -9,6 +9,8 @@ from app.core.exceptions import DomainError
 from app.db.session import get_db
 from app.models.user import RoleEnum, User
 from app.schemas.exam import (
+    AdmitCardHoldRequest,
+    AdmitCardRow,
     DatesheetEntryOut,
     DatesheetSave,
     ExamCreate,
@@ -26,6 +28,7 @@ from app.schemas.exam import (
     TabulationOut,
     TeacherSubjectOut,
 )
+from app.services.automation_service import AutomationService
 from app.services.exam_service import ExamService
 
 router = APIRouter(prefix="/exams", tags=["exams"])
@@ -119,7 +122,17 @@ def delete_exam(exam_id: uuid.UUID, current_user: User = Depends(ADMIN), db: Ses
 @router.post("/{exam_id}/publish-results", response_model=ExamOut)
 def publish_results(exam_id: uuid.UUID, payload: PublishResultsRequest, current_user: User = Depends(ADMIN),
                     db: Session = Depends(get_db)):
-    return ExamService(db).set_results_published(current_user.tenant_id, exam_id, payload.published)
+    service = ExamService(db)
+    result = service.set_results_published(current_user.tenant_id, exam_id, payload.published)
+    if payload.published:
+        automation = AutomationService(db)
+        for student_id, student_name, exam_name in service.result_recipients(current_user.tenant_id, exam_id):
+            automation.fire(
+                current_user.tenant_id,
+                "result_published",
+                {"student_id": student_id, "student_name": student_name, "exam": exam_name},
+            )
+    return result
 
 
 # ---------------------------------------------------------------- datesheet
@@ -217,3 +230,48 @@ def save_student_remarks(exam_id: uuid.UUID, student_id: uuid.UUID, payload: Stu
                          current_user: User = Depends(ADMIN), db: Session = Depends(get_db)):
     ExamService(db).save_student_remarks(current_user.tenant_id, exam_id, student_id, payload.remarks)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------------------------------------------------------------- admit cards
+
+
+@router.get("/{exam_id}/admit-cards", response_model=list[AdmitCardRow])
+def list_admit_cards(
+    exam_id: uuid.UUID,
+    class_grade_id: uuid.UUID,
+    current_user: User = Depends(ADMIN),
+    db: Session = Depends(get_db),
+):
+    return ExamService(db).list_admit_cards(current_user.tenant_id, exam_id, class_grade_id)
+
+
+@router.post("/{exam_id}/admit-cards/hold", status_code=status.HTTP_204_NO_CONTENT)
+def hold_admit_card(
+    exam_id: uuid.UUID,
+    payload: AdmitCardHoldRequest,
+    current_user: User = Depends(ADMIN),
+    db: Session = Depends(get_db),
+):
+    ExamService(db).set_admit_hold(current_user.tenant_id, exam_id, payload.student_id, payload.reason)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete("/{exam_id}/admit-cards/hold/{student_id}", status_code=status.HTTP_204_NO_CONTENT)
+def release_admit_card(
+    exam_id: uuid.UUID,
+    student_id: uuid.UUID,
+    current_user: User = Depends(ADMIN),
+    db: Session = Depends(get_db),
+):
+    ExamService(db).release_admit_hold(current_user.tenant_id, exam_id, student_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/{exam_id}/admit-cards/{student_id}/pdf")
+def admit_card_pdf(
+    exam_id: uuid.UUID,
+    student_id: uuid.UUID,
+    current_user: User = Depends(ADMIN),
+    db: Session = Depends(get_db),
+) -> StreamingResponse:
+    return _pdf(ExamService(db).admit_card_pdf(current_user.tenant_id, exam_id, student_id), "admit-card.pdf")

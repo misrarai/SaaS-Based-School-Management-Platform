@@ -3,7 +3,7 @@ reservations (holds queue) and reports. All operations are tenant-scoped."""
 
 import io
 import uuid
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,6 +17,8 @@ from app.models.library import (
     BookReservation,
     LibraryMember,
     LibrarySettings,
+    StockAudit,
+    StockAuditScan,
 )
 from app.models.staff import Staff
 from app.models.tenant import Tenant
@@ -29,6 +31,8 @@ from app.repositories.library_repo import (
     BookReservationRepository,
     LibraryMemberRepository,
     LibrarySettingsRepository,
+    StockAuditRepository,
+    StockAuditScanRepository,
 )
 from app.schemas.library import (
     BookCreate,
@@ -43,6 +47,7 @@ from app.schemas.library import (
     MemberCreate,
     RenewRequest,
     ReturnRequest,
+    StockAuditCreate,
 )
 
 
@@ -60,6 +65,8 @@ class LibraryService:
         self.members = LibraryMemberRepository(db)
         self.issues = BookIssueRepository(db)
         self.reservations = BookReservationRepository(db)
+        self.audits = StockAuditRepository(db)
+        self.scans = StockAuditScanRepository(db)
 
     # ------------------------------------------------------------------ settings
     def get_settings(self, tenant_id: uuid.UUID) -> LibrarySettings:
@@ -942,6 +949,111 @@ class LibraryService:
             "pending_reservations": len(self.reservations.query(tenant_id, status="pending")),
             "outstanding_fines": round(outstanding, 2),
         }
+
+    # ------------------------------------------------------------------ copies (global) & stock audit
+
+    def _copy_with_book(self, tenant_id: uuid.UUID, copies: list[BookCopy]) -> list[dict]:
+        books = self.books.get_many(tenant_id, {c.book_id for c in copies})
+        out = []
+        for c in copies:
+            b = books.get(c.book_id)
+            out.append(
+                {
+                    "id": c.id,
+                    "book_id": c.book_id,
+                    "book_title": b.title if b else None,
+                    "book_author": b.author if b else None,
+                    "accession_number": c.accession_number,
+                    "barcode": c.barcode,
+                    "status": c.status,
+                    "notes": c.notes,
+                }
+            )
+        return out
+
+    def list_copies(self, tenant_id: uuid.UUID, status: str | None = None, q: str | None = None) -> list[dict]:
+        return self._copy_with_book(tenant_id, self.copies.list_all(tenant_id, status=status, q=q))
+
+    def create_stock_audit(self, tenant_id: uuid.UUID, payload: StockAuditCreate, user_id: uuid.UUID | None) -> StockAudit:
+        expected = len(self.copies.all_ids(tenant_id))
+        return self.audits.create(
+            StockAudit(
+                tenant_id=tenant_id,
+                name=payload.name,
+                notes=payload.notes,
+                total_expected=expected,
+                created_by_user_id=user_id,
+            )
+        )
+
+    def list_stock_audits(self, tenant_id: uuid.UUID) -> list[StockAudit]:
+        return self.audits.list_recent(tenant_id)
+
+    def _get_audit(self, tenant_id: uuid.UUID, audit_id: uuid.UUID) -> StockAudit:
+        audit = self.audits.get_by_id(tenant_id, audit_id)
+        if audit is None:
+            raise NotFoundError("Stock audit not found.")
+        return audit
+
+    def stock_audit_detail(self, tenant_id: uuid.UUID, audit_id: uuid.UUID) -> dict:
+        audit = self._get_audit(tenant_id, audit_id)
+        scanned_ids = set(self.scans.scanned_copy_ids(tenant_id, audit_id))
+        all_copies = self.copies.list_all(tenant_id)
+        seen = [c for c in all_copies if c.id in scanned_ids]
+        not_scanned = [c for c in all_copies if c.id not in scanned_ids]
+        return {
+            "id": audit.id,
+            "name": audit.name,
+            "status": audit.status,
+            "started_at": audit.started_at,
+            "completed_at": audit.completed_at,
+            "total_expected": audit.total_expected,
+            "total_seen": len(seen),
+            "total_missing": audit.total_missing if audit.status == "completed" else len(not_scanned),
+            "notes": audit.notes,
+            "seen_copies": self._copy_with_book(tenant_id, seen),
+            "missing_copies": self._copy_with_book(tenant_id, not_scanned),
+        }
+
+    def scan_stock_audit(self, tenant_id: uuid.UUID, audit_id: uuid.UUID, identifier: str) -> dict:
+        audit = self._get_audit(tenant_id, audit_id)
+        if audit.status != "in_progress":
+            raise DomainError("This stock audit is already completed.")
+        copy = self.copies.find_by_identifier(tenant_id, identifier)
+        if copy is None:
+            return {
+                "ok": False,
+                "message": f"No copy found for '{identifier}'.",
+                "seen_count": self.scans.count_for_audit(tenant_id, audit_id),
+                "scanned_copy": None,
+            }
+        with_book = self._copy_with_book(tenant_id, [copy])[0]
+        if self.scans.exists(tenant_id, audit_id, copy.id):
+            return {
+                "ok": True,
+                "message": f"'{copy.accession_number}' was already scanned.",
+                "seen_count": self.scans.count_for_audit(tenant_id, audit_id),
+                "scanned_copy": with_book,
+            }
+        self.scans.create(StockAuditScan(tenant_id=tenant_id, audit_id=audit_id, copy_id=copy.id))
+        return {
+            "ok": True,
+            "message": f"Scanned '{copy.accession_number}'.",
+            "seen_count": self.scans.count_for_audit(tenant_id, audit_id),
+            "scanned_copy": with_book,
+        }
+
+    def complete_stock_audit(self, tenant_id: uuid.UUID, audit_id: uuid.UUID) -> StockAudit:
+        audit = self._get_audit(tenant_id, audit_id)
+        if audit.status == "completed":
+            return audit
+        scanned = self.scans.count_for_audit(tenant_id, audit_id)
+        audit.status = "completed"
+        audit.completed_at = datetime.now(timezone.utc)
+        audit.total_seen = scanned
+        audit.total_missing = max(audit.total_expected - scanned, 0)
+        self.db.flush()
+        return audit
 
 
 def _render_member_card(school_name: str, member: dict) -> bytes:

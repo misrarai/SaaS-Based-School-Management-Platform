@@ -15,6 +15,11 @@ from app.schemas.inventory import (
     AssetCreate,
     AssetDispose,
     AssetOut,
+    RequisitionApprove,
+    RequisitionCreate,
+    RequisitionIssue,
+    RequisitionOut,
+    RequisitionReject,
     AssetUpdate,
     CategoryIn,
     CategoryOut,
@@ -257,3 +262,46 @@ def dispose_asset(
     db: Session = Depends(get_db),
 ):
     return InventoryService(db).dispose_asset(current_user.tenant_id, asset_id, payload)
+
+
+# ---------- Requisitions ----------
+
+
+@router.get("/requisitions", response_model=list[RequisitionOut])
+def list_requisitions(
+    status_filter: str | None = Query(default=None, alias="status"),
+    current_user: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    return InventoryService(db).list_requisitions(current_user.tenant_id, status_filter)
+
+
+@router.post("/requisitions", response_model=RequisitionOut, status_code=status.HTTP_201_CREATED)
+def create_requisition(payload: RequisitionCreate, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    return InventoryService(db).create_requisition(current_user.tenant_id, current_user.id, payload)
+
+
+@router.get("/requisitions/{req_id}", response_model=RequisitionOut)
+def get_requisition(req_id: uuid.UUID, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    return InventoryService(db).get_requisition(current_user.tenant_id, req_id)
+
+
+@router.post("/requisitions/{req_id}/approve", response_model=RequisitionOut)
+def approve_requisition(
+    req_id: uuid.UUID, payload: RequisitionApprove, current_user: User = Depends(admin_only), db: Session = Depends(get_db)
+):
+    return InventoryService(db).approve_requisition(current_user.tenant_id, current_user.id, req_id, payload)
+
+
+@router.post("/requisitions/{req_id}/reject", response_model=RequisitionOut)
+def reject_requisition(
+    req_id: uuid.UUID, payload: RequisitionReject, current_user: User = Depends(admin_only), db: Session = Depends(get_db)
+):
+    return InventoryService(db).reject_requisition(current_user.tenant_id, current_user.id, req_id, payload)
+
+
+@router.post("/requisitions/{req_id}/issue", response_model=RequisitionOut)
+def issue_requisition(
+    req_id: uuid.UUID, payload: RequisitionIssue, current_user: User = Depends(admin_only), db: Session = Depends(get_db)
+):
+    return InventoryService(db).issue_requisition(current_user.tenant_id, current_user.id, req_id, payload)

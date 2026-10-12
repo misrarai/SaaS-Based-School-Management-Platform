@@ -251,3 +251,46 @@ def test_removing_class_and_deleting_exam_cleans_up(client):
     assert client.get(f"/api/v1/exams/{exam['id']}/datesheet", headers=ctx["admin"]).json() == []
     assert client.delete(f"/api/v1/exams/{exam['id']}", headers=ctx["admin"]).status_code == 204
     assert client.get(f"/api/v1/exams/{exam['id']}", headers=ctx["admin"]).status_code == 404
+
+
+def test_admit_cards_eligibility_hold_and_pdf(client):
+    ctx = setup_school(client)
+    exam = create_exam_with_datesheet(client, ctx)
+    admin = ctx["admin"]
+    exam_id = exam["id"]
+    cls_id = ctx["cls"]["id"]
+
+    # all students eligible by default
+    rows = client.get(f"/api/v1/exams/{exam_id}/admit-cards?class_grade_id={cls_id}", headers=admin).json()
+    assert len(rows) == 3
+    assert all(r["eligible"] and r["hold_reason"] is None for r in rows)
+
+    target = rows[0]
+    # put one student on hold
+    held = client.post(
+        f"/api/v1/exams/{exam_id}/admit-cards/hold",
+        json={"student_id": target["student_id"], "reason": "Unpaid dues"},
+        headers=admin,
+    )
+    assert held.status_code == 204
+    rows = client.get(f"/api/v1/exams/{exam_id}/admit-cards?class_grade_id={cls_id}", headers=admin).json()
+    held_row = next(r for r in rows if r["student_id"] == target["student_id"])
+    assert held_row["eligible"] is False and held_row["hold_reason"] == "Unpaid dues"
+
+    # held student's admit card PDF is blocked
+    assert client.get(f"/api/v1/exams/{exam_id}/admit-cards/{target['student_id']}/pdf", headers=admin).status_code == 400
+
+    # an eligible student gets a PDF
+    ok = next(r for r in rows if r["eligible"])
+    pdf = client.get(f"/api/v1/exams/{exam_id}/admit-cards/{ok['student_id']}/pdf", headers=admin)
+    assert pdf.status_code == 200 and pdf.content[:4] == b"%PDF"
+
+    # release the hold
+    assert client.delete(f"/api/v1/exams/{exam_id}/admit-cards/hold/{target['student_id']}", headers=admin).status_code == 204
+    rows = client.get(f"/api/v1/exams/{exam_id}/admit-cards?class_grade_id={cls_id}", headers=admin).json()
+    assert all(r["eligible"] for r in rows)
+
+    # teachers cannot access admit cards
+    from tests.conftest import auth_headers, login
+    teacher = auth_headers(login(client, "greenwood", "tom@greenwood.example.com", PW))
+    assert client.get(f"/api/v1/exams/{exam_id}/admit-cards?class_grade_id={cls_id}", headers=teacher).status_code == 403

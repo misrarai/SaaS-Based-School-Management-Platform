@@ -77,6 +77,16 @@ api_router.include_router(fee_collection_endpoints.router)
 
 from app.api.v1.endpoints import accounting as accounting_endpoints  # noqa: E402
 from app.api.v1.endpoints import inventory as inventory_endpoints  # noqa: E402
+from app.api.v1.endpoints import automation as automation_endpoints  # noqa: E402
+from app.api.v1.endpoints import hifz as hifz_endpoints  # noqa: E402
+from app.api.v1.endpoints import promotion as promotion_endpoints  # noqa: E402
+from app.api.v1.endpoints import recruitment as recruitment_endpoints  # noqa: E402
+from app.api.v1.endpoints import holiday as holiday_endpoints  # noqa: E402
 
 api_router.include_router(accounting_endpoints.router)
 api_router.include_router(inventory_endpoints.router)
+api_router.include_router(automation_endpoints.router)
+api_router.include_router(hifz_endpoints.router)
+api_router.include_router(promotion_endpoints.router)
+api_router.include_router(recruitment_endpoints.router)
+api_router.include_router(holiday_endpoints.router)

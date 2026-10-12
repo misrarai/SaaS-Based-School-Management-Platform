@@ -278,3 +278,38 @@ export const updateAsset = (id: string, p: Partial<AssetPayload>) =>
   apiClient.patch<FixedAsset>(`${BASE}/assets/${id}`, p).then((r) => r.data);
 export const disposeAsset = (id: string, p: { disposal_date: string; disposal_value?: number; disposal_notes?: string }) =>
   apiClient.post<FixedAsset>(`${BASE}/assets/${id}/dispose`, p).then((r) => r.data);
+
+// ---------- Requisitions ----------
+export type RequisitionStatus = "pending" | "approved" | "rejected" | "issued";
+export interface RequisitionLine {
+  id: string;
+  item_id: string;
+  item_name: string | null;
+  item_code: string | null;
+  quantity_requested: number;
+  quantity_approved: number | null;
+}
+export interface Requisition {
+  id: string;
+  requisition_number: string;
+  department: string;
+  requested_by: string | null;
+  requisition_date: string;
+  status: RequisitionStatus;
+  notes: string | null;
+  reject_reason: string | null;
+  store_id: string | null;
+  issued_txn_id: string | null;
+  lines: RequisitionLine[];
+}
+
+export const listRequisitions = (status?: string) =>
+  apiClient.get<Requisition[]>(`${BASE}/requisitions`, { params: { status: status || undefined } }).then((r) => r.data);
+export const createRequisition = (p: { department: string; requested_by?: string; notes?: string; lines: { item_id: string; quantity_requested: number }[] }) =>
+  apiClient.post<Requisition>(`${BASE}/requisitions`, p).then((r) => r.data);
+export const approveRequisition = (id: string, lines: { line_id: string; quantity_approved: number }[] = []) =>
+  apiClient.post<Requisition>(`${BASE}/requisitions/${id}/approve`, { lines }).then((r) => r.data);
+export const rejectRequisition = (id: string, reason: string) =>
+  apiClient.post<Requisition>(`${BASE}/requisitions/${id}/reject`, { reason }).then((r) => r.data);
+export const issueRequisition = (id: string, storeId: string) =>
+  apiClient.post<Requisition>(`${BASE}/requisitions/${id}/issue`, { store_id: storeId }).then((r) => r.data);

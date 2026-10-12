@@ -13,6 +13,9 @@ from app.models.mixins import GUID, TimestampMixin, UUIDPKMixin
 
 ENQUIRY_STATUSES = ("new", "follow_up", "converted", "closed")
 COMPLAINT_STATUSES = ("open", "in_progress", "resolved")
+APPOINTMENT_STATUSES = ("scheduled", "completed", "cancelled", "no_show")
+LOST_FOUND_KINDS = ("lost", "found")
+LOST_FOUND_STATUSES = ("open", "claimed", "returned", "disposed")
 
 
 class AdmissionEnquiry(UUIDPKMixin, TimestampMixin, Base):
@@ -115,4 +118,33 @@ class PhoneCallLog(UUIDPKMixin, TimestampMixin, Base):
     call_type: Mapped[str] = mapped_column(String(20), default="incoming", nullable=False)
     follow_up_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class Appointment(UUIDPKMixin, TimestampMixin, Base):
+    __tablename__ = "appointments"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    visitor_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    purpose: Mapped[str] = mapped_column(String(255), nullable=False)
+    with_whom: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    appointment_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    appointment_time: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="scheduled", nullable=False, index=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class LostFoundItem(UUIDPKMixin, TimestampMixin, Base):
+    __tablename__ = "lost_found_items"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(10), nullable=False, index=True)  # lost | found
+    item_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reported_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    item_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), default="open", nullable=False, index=True)
+    claimed_by: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)

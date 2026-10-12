@@ -244,3 +244,56 @@ def test_library_is_tenant_isolated(client):
     # copies of school A don't block the same accession number in school B
     b2 = _book(client, headers_b)
     assert b2["copies"][0]["accession_number"] == "1"
+
+
+def test_global_copies_list(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    _book(client, headers, title="Clean Code", copies=2)
+    _book(client, headers, title="Refactoring", copies=1)
+    copies = client.get(f"{API}/copies", headers=headers).json()
+    assert len(copies) == 3
+    assert {c["book_title"] for c in copies} == {"Clean Code", "Refactoring"}
+    assert all(c["accession_number"] for c in copies)
+    # filter by status
+    avail = client.get(f"{API}/copies?status=available", headers=headers).json()
+    assert len(avail) == 3
+
+
+def test_stock_audit_scan_and_complete(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    book = client.get(f"{API}/books/{_book(client, headers, copies=3)['id']}", headers=headers).json()
+    accessions = [c["accession_number"] for c in book["copies"]]
+
+    audit = client.post(f"{API}/stocktakes", json={"name": "Annual 2026"}, headers=headers).json()
+    assert audit["status"] == "in_progress" and audit["total_expected"] == 3
+
+    # scan two of three copies
+    r1 = client.post(f"{API}/stocktakes/{audit['id']}/scan", json={"copy_identifier": accessions[0]}, headers=headers).json()
+    assert r1["ok"] and r1["seen_count"] == 1 and r1["scanned_copy"]["accession_number"] == accessions[0]
+    # scanning the same copy again is idempotent
+    r1b = client.post(f"{API}/stocktakes/{audit['id']}/scan", json={"copy_identifier": accessions[0]}, headers=headers).json()
+    assert r1b["seen_count"] == 1
+    client.post(f"{API}/stocktakes/{audit['id']}/scan", json={"copy_identifier": accessions[1]}, headers=headers)
+    # unknown code
+    bad = client.post(f"{API}/stocktakes/{audit['id']}/scan", json={"copy_identifier": "NOPE"}, headers=headers).json()
+    assert bad["ok"] is False
+
+    detail = client.get(f"{API}/stocktakes/{audit['id']}", headers=headers).json()
+    assert detail["total_seen"] == 2 and detail["total_missing"] == 1
+    assert len(detail["seen_copies"]) == 2 and len(detail["missing_copies"]) == 1
+
+    done = client.post(f"{API}/stocktakes/{audit['id']}/complete", json={}, headers=headers).json()
+    assert done["status"] == "completed" and done["total_seen"] == 2 and done["total_missing"] == 1
+    # scanning after completion is rejected
+    assert client.post(f"{API}/stocktakes/{audit['id']}/scan", json={"copy_identifier": accessions[2]}, headers=headers).status_code == 400
+
+
+def test_stocktake_is_admin_only(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    klass = _class(client, headers)
+    _student(client, headers, klass["id"], "pupil@greenwood.example.com")
+    student_tokens = login(client, "greenwood", "pupil@greenwood.example.com", "Password123!")
+    assert client.get(f"{API}/stocktakes", headers=auth_headers(student_tokens)).status_code == 403

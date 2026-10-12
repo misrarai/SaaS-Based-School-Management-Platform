@@ -260,3 +260,117 @@ def test_non_admin_cannot_promote_students(client):
         headers=teacher_headers,
     )
     assert response.status_code == 403
+
+
+def test_free_text_year_class_is_linked_and_promoted(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    year_a = create_academic_year(client, headers, "2025-2026", "2025-08-01", "2026-06-30")
+    year_b = create_academic_year(client, headers, "2026-2027", "2026-08-01", "2027-06-30")
+    grade5 = create_class(client, headers, name="Grade 5", level_order=5, academic_year="2025-2026")
+    grade6 = create_class(client, headers, name="Grade 6", level_order=6, academic_year="2026-2027")
+    assert grade5["academic_year_id"] == year_a["id"]
+    student = create_student(client, headers, grade5["id"])
+
+    body = client.post(
+        "/api/v1/academic-years/promote",
+        json={"from_academic_year_id": year_a["id"], "to_academic_year_id": year_b["id"]},
+        headers=headers,
+    ).json()
+    assert body["students_promoted"] == 1
+    assert client.get(f"/api/v1/students/{student['id']}", headers=headers).json()["class_grade_id"] == grade6["id"]
+
+
+def test_update_class_section_subject(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    year = create_academic_year(client, headers, "2026-2027", "2026-08-01", "2027-06-30")
+    grade = create_class(client, headers)
+    other = create_class(client, headers, name="Grade 6", level_order=6)
+
+    resp = client.patch(
+        f"/api/v1/classes/{grade['id']}",
+        json={"name": "Grade Five", "level_order": 7, "academic_year_id": year["id"]},
+        headers=headers,
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["name"] == "Grade Five"
+    assert resp.json()["level_order"] == 7
+    assert resp.json()["academic_year_id"] == year["id"]
+    assert client.patch(f"/api/v1/classes/{other['id']}", json={"name": "Grade Five"}, headers=headers).status_code == 409
+
+    a = client.post(f"/api/v1/classes/{grade['id']}/sections", json={"name": "A"}, headers=headers).json()
+    client.post(f"/api/v1/classes/{grade['id']}/sections", json={"name": "B"}, headers=headers)
+    assert client.post(f"/api/v1/classes/{grade['id']}/sections", json={"name": "a"}, headers=headers).status_code == 409
+    assert client.patch(f"/api/v1/sections/{a['id']}", json={"name": "B"}, headers=headers).status_code == 409
+
+    teacher = client.post(
+        "/api/v1/teachers",
+        json={"full_name": "Tom Teacher", "email": "tom@greenwood.example.com", "password": "Password123!"},
+        headers=headers,
+    ).json()
+    resp = client.patch(f"/api/v1/sections/{a['id']}", json={"class_teacher_id": teacher["id"]}, headers=headers)
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["class_teacher_id"] == teacher["id"]
+
+    overview = client.get("/api/v1/classes/overview", headers=headers).json()
+    row = next(c for c in overview if c["id"] == grade["id"])
+    assert [s["name"] for s in row["sections"]] == ["A", "B"]
+    assert row["sections"][0]["class_teacher_name"] == "Tom Teacher"
+
+    resp = client.patch(f"/api/v1/sections/{a['id']}", json={"clear_class_teacher": True}, headers=headers)
+    assert resp.json()["class_teacher_id"] is None
+
+    subj = client.post(
+        f"/api/v1/classes/{grade['id']}/subjects", json={"name": "Maths", "code": "M5"}, headers=headers
+    ).json()
+    assert client.post(
+        f"/api/v1/classes/{grade['id']}/subjects", json={"name": "Maths 2", "code": "m5"}, headers=headers
+    ).status_code == 409
+    resp = client.patch(f"/api/v1/subjects/{subj['id']}", json={"name": "Mathematics"}, headers=headers)
+    assert resp.json()["name"] == "Mathematics"
+
+
+def test_delete_blocked_while_in_use_then_allowed(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    grade = create_class(client, headers)
+    section = client.post(f"/api/v1/classes/{grade['id']}/sections", json={"name": "A"}, headers=headers).json()
+    subject = client.post(
+        f"/api/v1/classes/{grade['id']}/subjects", json={"name": "Maths", "code": "M5"}, headers=headers
+    ).json()
+    student = create_student(client, headers, grade["id"], section_id=section["id"])
+
+    resp = client.delete(f"/api/v1/sections/{section['id']}", headers=headers)
+    assert resp.status_code == 409
+    assert "student profiles" in resp.json()["detail"]
+    assert client.delete(f"/api/v1/classes/{grade['id']}", headers=headers).status_code == 409
+
+    # Subject isn't used by anything yet — deletable on its own.
+    assert client.delete(f"/api/v1/subjects/{subject['id']}", headers=headers).status_code == 204
+
+    empty = create_class(client, headers, name="Grade 9", level_order=9)
+    client.post(f"/api/v1/classes/{empty['id']}/sections", json={"name": "A"}, headers=headers)
+    assert client.delete(f"/api/v1/classes/{empty['id']}", headers=headers).status_code == 204
+    assert all(c["id"] != empty["id"] for c in client.get("/api/v1/classes", headers=headers).json())
+    assert student  # sanity
+
+
+def test_teacher_cannot_edit_or_delete_structure(client):
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    grade = create_class(client, headers)
+    client.post(
+        "/api/v1/teachers",
+        json={"full_name": "Tom Teacher", "email": "tom@greenwood.example.com", "password": "Password123!"},
+        headers=headers,
+    )
+    teacher_headers = auth_headers(
+        client.post(
+            "/api/v1/auth/login",
+            json={"tenant_slug": "greenwood", "email": "tom@greenwood.example.com", "password": "Password123!"},
+        ).json()
+    )
+    assert client.patch(f"/api/v1/classes/{grade['id']}", json={"name": "X"}, headers=teacher_headers).status_code == 403
+    assert client.delete(f"/api/v1/classes/{grade['id']}", headers=teacher_headers).status_code == 403
+    assert client.get("/api/v1/classes/overview", headers=teacher_headers).status_code == 200

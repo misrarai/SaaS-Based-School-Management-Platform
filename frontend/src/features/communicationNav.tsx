@@ -7,7 +7,6 @@ import { adminNavItems } from "./admin/adminNav";
 import { teacherNavItems } from "./teacher/teacherNav";
 import { studentNavItems } from "./student/studentNav";
 import { parentNavItems } from "./parent/parentNav";
-import { frontOfficeAdminNav } from "./frontOfficeNav";
 
 export const communicationAdminNav: NavItem[] = [
   {
@@ -44,8 +43,8 @@ function merge(base: NavItem[], extra: NavItem[]): NavItem[] {
   return [...base, ...extra.filter((i) => !labels.has(i.label) && !tos.has(i.to))];
 }
 
-/** Sidebar used by the pages of these two modules until the main nav files include the groups. */
-export const adminModuleNav: NavItem[] = merge(adminNavItems, frontOfficeAdminNav);
+/** Admin sidebar — the Forza-ordered nav from adminNav (Front Desk is already included there). */
+export const adminModuleNav: NavItem[] = adminNavItems;
 export const teacherModuleNav: NavItem[] = merge(teacherNavItems, communicationTeacherNav);
 export const studentModuleNav: NavItem[] = merge(studentNavItems, communicationStudentNav);
 export const parentModuleNav: NavItem[] = merge(parentNavItems, communicationParentNav);

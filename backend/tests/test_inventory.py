@@ -154,3 +154,41 @@ def test_inventory_tenant_isolation(client):
         "store_id": store_b["id"], "txn_date": "2026-03-01",
         "lines": [{"item_id": ctx["shirt"]["id"], "quantity": 1}],
     }, expected=404)
+
+
+def test_requisition_create_approve_issue_flow(client):
+    headers, ctx = _setup(client)
+    shirt, main = ctx["shirt"], ctx["main"]
+    # stock the store
+    _post(client, headers, "/purchases", {
+        "store_id": main["id"], "txn_date": "2026-03-01",
+        "lines": [{"item_id": shirt["id"], "quantity": 50, "unit_price": 500}],
+    })
+
+    req = _post(client, headers, "/requisitions", {
+        "department": "Science Lab", "requested_by": "Mr. Khan",
+        "lines": [{"item_id": shirt["id"], "quantity_requested": 10}],
+    })
+    assert req["status"] == "pending" and req["requisition_number"] == "REQ-0001"
+    assert req["lines"][0]["quantity_requested"] == 10 and req["lines"][0]["quantity_approved"] is None
+
+    # cannot issue before approval
+    assert client.post(f"{BASE}/requisitions/{req['id']}/issue", json={"store_id": main["id"]}, headers=headers).status_code in (400, 422)
+
+    # approve with an override quantity
+    line_id = req["lines"][0]["id"]
+    approved = client.post(f"{BASE}/requisitions/{req['id']}/approve", json={"lines": [{"line_id": line_id, "quantity_approved": 8}]}, headers=headers).json()
+    assert approved["status"] == "approved" and approved["lines"][0]["quantity_approved"] == 8
+
+    # issue → creates a stock issue and drops stock from 50 to 42
+    issued = client.post(f"{BASE}/requisitions/{req['id']}/issue", json={"store_id": main["id"]}, headers=headers).json()
+    assert issued["status"] == "issued" and issued["issued_txn_id"]
+    levels = client.get(f"{BASE}/stock", params={"store_id": main["id"], "item_id": shirt["id"]}, headers=headers).json()
+    assert levels[0]["quantity"] == 42
+
+    # a rejected requisition
+    req2 = _post(client, headers, "/requisitions", {"department": "Art", "lines": [{"item_id": shirt["id"], "quantity_requested": 5}]})
+    rejected = client.post(f"{BASE}/requisitions/{req2['id']}/reject", json={"reason": "Out of budget"}, headers=headers).json()
+    assert rejected["status"] == "rejected" and rejected["reject_reason"] == "Out of budget"
+
+    assert len(client.get(f"{BASE}/requisitions?status=issued", headers=headers).json()) == 1

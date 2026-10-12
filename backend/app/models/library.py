@@ -12,6 +12,7 @@ from app.models.mixins import GUID, TimestampMixin, UUIDPKMixin, utcnow
 
 COPY_STATUSES = ("available", "issued", "lost", "damaged", "reserved")
 MEMBER_TYPES = ("student", "teacher", "staff")
+STOCK_AUDIT_STATUSES = ("in_progress", "completed")
 
 
 class LibrarySettings(UUIDPKMixin, TimestampMixin, Base):
@@ -122,3 +123,36 @@ class BookReservation(UUIDPKMixin, TimestampMixin, Base):
     copy_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("library_book_copies.id"), nullable=True)
     ready_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     expires_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+
+class StockAudit(UUIDPKMixin, TimestampMixin, Base):
+    """A stock-take session: scan the copies physically on the shelves, then reconcile
+    what was NOT scanned as missing."""
+
+    __tablename__ = "library_stock_audits"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(150), nullable=False)
+    # in_progress | completed
+    status: Mapped[str] = mapped_column(String(20), default="in_progress", nullable=False)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    total_expected: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_seen: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    total_missing: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("users.id"), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+
+class StockAuditScan(UUIDPKMixin, TimestampMixin, Base):
+    """One copy scanned/seen during a stock-take session."""
+
+    __tablename__ = "library_stock_audit_scans"
+    __table_args__ = (UniqueConstraint("audit_id", "copy_id", name="uq_library_audit_copy"),)
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    audit_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("library_stock_audits.id"), nullable=False, index=True
+    )
+    copy_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("library_book_copies.id"), nullable=False, index=True)
+    scanned_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

@@ -247,3 +247,57 @@ def render_tabulation(*, tenant_name: str, exam_name: str, academic_year: str | 
     story += [Spacer(1, 16 * mm), _signatures(270)]
     doc.build(story)
     return buffer.getvalue()
+
+
+def render_admit_card(*, tenant_name: str, exam_name: str, academic_year: str | None, class_name: str,
+                      student_name: str, roll_number: str | None, admission_number: str | None,
+                      section_name: str | None, rows: list[dict]) -> bytes:
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, topMargin=18 * mm, bottomMargin=18 * mm,
+                            leftMargin=15 * mm, rightMargin=15 * mm)
+    s = _styles()
+    story = [
+        Paragraph(_e(tenant_name), s["title"]),
+        Paragraph(f"{_e(exam_name)}{f' ({_e(academic_year)})' if academic_year else ''} — Admit Card", s["subtitle"]),
+        Spacer(1, 6 * mm),
+    ]
+    info = [
+        ["Student", _e(student_name), "Class", _e(class_name)],
+        ["Roll No", roll_number or "—", "Section", section_name or "—"],
+        ["Admission No", admission_number or "—", "", ""],
+    ]
+    it = Table(info, colWidths=[28 * mm, 62 * mm, 28 * mm, 62 * mm])
+    it.setStyle(TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 10),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
+        ("FONTNAME", (2, 0), (2, -1), "Helvetica-Bold"),
+        ("LINEBELOW", (0, 0), (-1, -2), 0.3, PRIMARY),
+    ]))
+    story.append(it)
+    story.append(Spacer(1, 8 * mm))
+    if rows:
+        data = [["#", "Date", "Day", "Subject", "Time", "Room"]]
+        for i, r in enumerate(rows, start=1):
+            d = r.get("exam_date")
+            st, et = r.get("start_time"), r.get("end_time")
+            time_text = f"{st.strftime('%I:%M %p')} - {et.strftime('%I:%M %p')}" if st and et else (
+                st.strftime("%I:%M %p") if st else "—")
+            data.append([
+                str(i),
+                d.strftime("%d %b %Y") if d else "TBA",
+                d.strftime("%A") if d else "—",
+                Paragraph(_e(r["subject_name"]), s["cell"]),
+                time_text,
+                r.get("room") or "—",
+            ])
+        t = Table(data, colWidths=[8 * mm, 26 * mm, 24 * mm, 56 * mm, 42 * mm, 24 * mm], repeatRows=1)
+        t.setStyle(TableStyle(_grid_style(font_size=9)))
+        story.append(t)
+    else:
+        story.append(Paragraph("No papers scheduled yet.", s["normal"]))
+    story.append(Spacer(1, 16 * mm))
+    story.append(_signatures(180))
+    doc.build(story)
+    return buffer.getvalue()

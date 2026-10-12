@@ -164,3 +164,46 @@ class FixedAsset(UUIDPKMixin, TimestampMixin, Base):
     disposal_value: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     disposal_notes: Mapped[str | None] = mapped_column(String(255), nullable=True)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+
+REQUISITION_STATUSES = ("pending", "approved", "rejected", "issued")
+
+
+class InventoryRequisition(UUIDPKMixin, TimestampMixin, Base):
+    """A request for store items (e.g. by a department), which an admin approves then issues."""
+
+    __tablename__ = "inv_requisitions"
+    __table_args__ = (UniqueConstraint("tenant_id", "requisition_number", name="uq_inv_req_tenant_number"),)
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    requisition_number: Mapped[str] = mapped_column(String(30), nullable=False)
+    department: Mapped[str] = mapped_column(String(150), nullable=False)
+    requested_by: Mapped[str | None] = mapped_column(String(150), nullable=True)
+    requisition_date: Mapped[date_] = mapped_column(Date, nullable=False)
+    # pending | approved | rejected | issued
+    status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False, index=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    reject_reason: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    store_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("inv_stores.id"), nullable=True)
+    issued_txn_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("inv_transactions.id"), nullable=True)
+    decided_by_user_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("users.id"), nullable=True)
+    created_by_user_id: Mapped[uuid.UUID | None] = mapped_column(GUID(), ForeignKey("users.id"), nullable=True)
+
+    lines: Mapped[list["RequisitionLine"]] = relationship(
+        back_populates="requisition", cascade="all, delete-orphan", order_by="RequisitionLine.line_no"
+    )
+
+
+class RequisitionLine(UUIDPKMixin, Base):
+    __tablename__ = "inv_requisition_lines"
+
+    tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
+    requisition_id: Mapped[uuid.UUID] = mapped_column(
+        GUID(), ForeignKey("inv_requisitions.id"), nullable=False, index=True
+    )
+    item_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("inv_items.id"), nullable=False)
+    line_no: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    quantity_requested: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    quantity_approved: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+
+    requisition: Mapped[InventoryRequisition] = relationship(back_populates="lines")

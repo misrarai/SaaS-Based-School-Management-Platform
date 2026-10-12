@@ -302,3 +302,106 @@ class CallOut(BaseModel):
     notes: str | None
 
     model_config = {"from_attributes": True}
+
+
+# ---------- Front-desk dashboard ----------
+
+
+class FrontOfficeDashboard(BaseModel):
+    """Aggregated snapshot across the front-office registers for the desk landing page."""
+
+    visitors_today: int
+    visitors_inside: int
+    gate_passes_today: int
+    calls_today: int
+    parcels_today: int
+    complaints_open: int
+    complaints_total: int
+    enquiries_new: int
+    enquiries_follow_up_due: int
+    enquiries_total: int
+    recent_visitors: list[VisitorOut]
+    open_complaints: list[ComplaintOut]
+
+
+# ---------- Appointments ----------
+
+APPOINTMENT_STATUS_PATTERN = r"^(scheduled|completed|cancelled|no_show)$"
+
+
+class AppointmentCreate(BaseModel):
+    visitor_name: str = Field(min_length=1, max_length=255)
+    phone: str | None = None
+    purpose: str = Field(min_length=1, max_length=255)
+    with_whom: str | None = None
+    appointment_date: date | None = None
+    appointment_time: str | None = Field(default=None, max_length=10)
+    notes: str | None = None
+
+
+class AppointmentUpdate(BaseModel):
+    visitor_name: str | None = Field(default=None, max_length=255)
+    phone: str | None = None
+    purpose: str | None = Field(default=None, max_length=255)
+    with_whom: str | None = None
+    appointment_date: date | None = None
+    appointment_time: str | None = Field(default=None, max_length=10)
+    status: str | None = Field(default=None, pattern=APPOINTMENT_STATUS_PATTERN)
+    notes: str | None = None
+
+
+class AppointmentOut(BaseModel):
+    id: uuid.UUID
+    visitor_name: str
+    phone: str | None
+    purpose: str
+    with_whom: str | None
+    appointment_date: date
+    appointment_time: str | None
+    status: str
+    notes: str | None
+
+    model_config = {"from_attributes": True}
+
+
+# ---------- Lost & Found ----------
+
+LOST_FOUND_KIND_PATTERN = r"^(lost|found)$"
+LOST_FOUND_STATUS_PATTERN = r"^(open|claimed|returned|disposed)$"
+
+
+class LostFoundCreate(BaseModel):
+    kind: str = Field(pattern=LOST_FOUND_KIND_PATTERN)
+    item_name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    location: str | None = None
+    reported_by: str | None = None
+    item_date: date | None = None
+    notes: str | None = None
+
+
+class LostFoundUpdate(BaseModel):
+    kind: str | None = Field(default=None, pattern=LOST_FOUND_KIND_PATTERN)
+    item_name: str | None = Field(default=None, max_length=255)
+    description: str | None = None
+    location: str | None = None
+    reported_by: str | None = None
+    item_date: date | None = None
+    status: str | None = Field(default=None, pattern=LOST_FOUND_STATUS_PATTERN)
+    claimed_by: str | None = None
+    notes: str | None = None
+
+
+class LostFoundOut(BaseModel):
+    id: uuid.UUID
+    kind: str
+    item_name: str
+    description: str | None
+    location: str | None
+    reported_by: str | None
+    item_date: date
+    status: str
+    claimed_by: str | None
+    notes: str | None
+
+    model_config = {"from_attributes": True}

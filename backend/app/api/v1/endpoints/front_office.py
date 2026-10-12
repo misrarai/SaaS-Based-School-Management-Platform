@@ -9,9 +9,15 @@ from app.core.dependencies import require_role
 from app.db.session import get_db
 from app.models.user import RoleEnum, User
 from app.schemas.front_office import (
+    AppointmentCreate,
+    AppointmentOut,
+    AppointmentUpdate,
     CallCreate,
     CallOut,
     CallUpdate,
+    LostFoundCreate,
+    LostFoundOut,
+    LostFoundUpdate,
     ComplaintCreate,
     ComplaintOut,
     ComplaintUpdate,
@@ -22,6 +28,7 @@ from app.schemas.front_office import (
     EnquiryUpdate,
     FollowUpCreate,
     FollowUpOut,
+    FrontOfficeDashboard,
     GatePassCreate,
     GatePassOut,
     PostalCreate,
@@ -37,6 +44,16 @@ from app.services.front_office_service import FrontOfficeService
 router = APIRouter(prefix="/front-office", tags=["front-office"])
 
 admin_only = require_role(RoleEnum.ADMIN)
+
+
+# ---------- Front-desk dashboard ----------
+
+
+@router.get("/dashboard", response_model=FrontOfficeDashboard)
+def front_office_dashboard(
+    current_user: User = Depends(admin_only), db: Session = Depends(get_db)
+) -> FrontOfficeDashboard:
+    return FrontOfficeService(db).dashboard(current_user.tenant_id)
 
 
 # ---------- Admission enquiries ----------
@@ -276,4 +293,71 @@ def update_call(
 @router.delete("/calls/{call_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_call(call_id: uuid.UUID, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
     FrontOfficeService(db).delete_call(current_user.tenant_id, call_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------- Appointments ----------
+
+
+@router.get("/appointments", response_model=list[AppointmentOut])
+def list_appointments(
+    status_filter: str | None = Query(default=None, alias="status"),
+    day: date | None = Query(default=None, alias="date"),
+    q: str | None = None,
+    current_user: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    return FrontOfficeService(db).list_appointments(current_user.tenant_id, status=status_filter, day=day, query=q)
+
+
+@router.post("/appointments", response_model=AppointmentOut, status_code=status.HTTP_201_CREATED)
+def create_appointment(payload: AppointmentCreate, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    return FrontOfficeService(db).create_appointment(current_user.tenant_id, payload)
+
+
+@router.patch("/appointments/{appointment_id}", response_model=AppointmentOut)
+def update_appointment(
+    appointment_id: uuid.UUID,
+    payload: AppointmentUpdate,
+    current_user: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    return FrontOfficeService(db).update_appointment(current_user.tenant_id, appointment_id, payload)
+
+
+@router.delete("/appointments/{appointment_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_appointment(appointment_id: uuid.UUID, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    FrontOfficeService(db).delete_appointment(current_user.tenant_id, appointment_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------- Lost & Found ----------
+
+
+@router.get("/lost-found", response_model=list[LostFoundOut])
+def list_lost_found(
+    kind: str | None = Query(default=None),
+    status_filter: str | None = Query(default=None, alias="status"),
+    q: str | None = None,
+    current_user: User = Depends(admin_only),
+    db: Session = Depends(get_db),
+):
+    return FrontOfficeService(db).list_lost_found(current_user.tenant_id, kind=kind, status=status_filter, query=q)
+
+
+@router.post("/lost-found", response_model=LostFoundOut, status_code=status.HTTP_201_CREATED)
+def create_lost_found(payload: LostFoundCreate, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    return FrontOfficeService(db).create_lost_found(current_user.tenant_id, payload)
+
+
+@router.patch("/lost-found/{item_id}", response_model=LostFoundOut)
+def update_lost_found(
+    item_id: uuid.UUID, payload: LostFoundUpdate, current_user: User = Depends(admin_only), db: Session = Depends(get_db)
+):
+    return FrontOfficeService(db).update_lost_found(current_user.tenant_id, item_id, payload)
+
+
+@router.delete("/lost-found/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_lost_found(item_id: uuid.UUID, current_user: User = Depends(admin_only), db: Session = Depends(get_db)):
+    FrontOfficeService(db).delete_lost_found(current_user.tenant_id, item_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

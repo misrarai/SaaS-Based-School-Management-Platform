@@ -4,9 +4,10 @@ import type { NavItem } from "../components/AppShell";
 export const frontOfficeAdminNav: NavItem[] = [
   {
     label: "Front Office",
-    to: "/admin/front-office/enquiries",
+    to: "/admin/front-office",
     icon: <RoomServiceIcon fontSize="small" />,
     children: [
+      { label: "Dashboard", to: "/admin/front-office" },
       { label: "Admission Enquiries", to: "/admin/front-office/enquiries" },
       { label: "Visitor Book", to: "/admin/front-office/visitors" },
       { label: "Complaints", to: "/admin/front-office/complaints" },

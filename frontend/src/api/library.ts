@@ -287,3 +287,54 @@ export const getFineReport = (params?: { dateFrom?: string; dateTo?: string; sta
   );
 export const getMostIssuedReport = (limit = 10) =>
   data(apiClient.get<MostIssuedBook[]>("/library/reports/most-issued", { params: { limit } }));
+
+// ---------- Global copies (Book Items) ----------
+export interface CopyWithBook {
+  id: string;
+  book_id: string;
+  book_title: string | null;
+  book_author: string | null;
+  accession_number: string;
+  barcode: string | null;
+  status: CopyStatus;
+  notes: string | null;
+}
+
+export const listAllCopies = (params?: { status?: CopyStatus; q?: string }) =>
+  data(apiClient.get<CopyWithBook[]>("/library/copies", { params: { status: params?.status || undefined, q: params?.q || undefined } }));
+
+// ---------- Stock audit (stock-take) ----------
+export type StockAuditStatus = "in_progress" | "completed";
+
+export interface StockAudit {
+  id: string;
+  name: string;
+  status: StockAuditStatus;
+  started_at: string;
+  completed_at: string | null;
+  total_expected: number;
+  total_seen: number;
+  total_missing: number;
+  notes: string | null;
+}
+
+export interface StockAuditScanResult {
+  ok: boolean;
+  message: string;
+  seen_count: number;
+  scanned_copy: CopyWithBook | null;
+}
+
+export interface StockAuditDetail extends StockAudit {
+  seen_copies: CopyWithBook[];
+  missing_copies: CopyWithBook[];
+}
+
+export const listStockAudits = () => data(apiClient.get<StockAudit[]>("/library/stocktakes"));
+export const createStockAudit = (payload: { name: string; notes?: string }) =>
+  data(apiClient.post<StockAudit>("/library/stocktakes", payload));
+export const getStockAudit = (id: string) => data(apiClient.get<StockAuditDetail>(`/library/stocktakes/${id}`));
+export const scanStockAudit = (id: string, copyIdentifier: string) =>
+  data(apiClient.post<StockAuditScanResult>(`/library/stocktakes/${id}/scan`, { copy_identifier: copyIdentifier }));
+export const completeStockAudit = (id: string) =>
+  data(apiClient.post<StockAudit>(`/library/stocktakes/${id}/complete`, {}));

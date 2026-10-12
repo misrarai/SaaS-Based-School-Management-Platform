@@ -46,6 +46,10 @@ class Section(UUIDPKMixin, TimestampMixin, Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
     class_grade_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("class_grades.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    # The section in-charge ("class teacher") — distinct from the per-subject teachers on Course.
+    class_teacher_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("teacher_profiles.id"), nullable=True, index=True
+    )
 
 
 class Subject(UUIDPKMixin, TimestampMixin, Base):
