@@ -91,6 +91,9 @@ import { DatesheetManagerPage } from "../features/admin/datesheet/DatesheetManag
 import { ParentsListPage } from "../features/admin/parents/ParentsListPage";
 import { SendMessageToParentPage } from "../features/admin/parents/SendMessageToParentPage";
 import { ParentMessagesPage } from "../features/parent/messages/ParentMessagesPage";
+import { ParentLiveClassesPage } from "../features/parent/live/ParentLiveClassesPage";
+import { ParentVideosPage } from "../features/parent/videos/ParentVideosPage";
+import { ParentBooksPage } from "../features/parent/books/ParentBooksPage";
 import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
 import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
 import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
@@ -1073,6 +1076,31 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["parent"]}>
             <ParentMessagesPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── Parent new pages ── */}
+      <Route
+        path="/parent/live-classes"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <ParentLiveClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent/videos"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <ParentVideosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent/books"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <ParentBooksPage />
           </ProtectedRoute>
         }
       />
