@@ -62,7 +62,7 @@ export const adminNavItems: NavItem[] = [
     children: [
       { label: "All Classes (1-10)", to: "/admin/classes" },
       { label: "Subjects", to: "/admin/curriculum/subjects" },
-      { label: "Timetable", to: "/admin/schedule/timetable" },
+      { label: "Timetable", to: "/admin/schedule" },
     ],
   },
 
@@ -89,19 +89,19 @@ export const adminNavItems: NavItem[] = [
 
   {
     label: "Video Lectures",
-    to: "/admin/lms/videos",
+    to: "/admin/lms/lectures",
     icon: <VideoLibraryIcon fontSize="small" />,
     children: [
-      { label: "All Videos", to: "/admin/lms/videos" },
+      { label: "All Videos", to: "/admin/lms/lectures" },
     ],
   },
 
   {
     label: "Books Library",
-    to: "/admin/lms/books",
+    to: "/admin/lms/lectures",
     icon: <MenuBookIcon fontSize="small" />,
     children: [
-      { label: "All Books", to: "/admin/lms/books" },
+      { label: "All Books", to: "/admin/lms/lectures" },
     ],
   },
 
@@ -111,7 +111,7 @@ export const adminNavItems: NavItem[] = [
     icon: <QuizIcon fontSize="small" />,
     children: [
       { label: "All Quizzes", to: "/admin/lms/quizzes" },
-      { label: "Results", to: "/admin/lms/quiz-results" },
+      { label: "Results", to: "/admin/lms/reports" },
     ],
   },
 
@@ -129,10 +129,10 @@ export const adminNavItems: NavItem[] = [
     to: "/admin/fees",
     icon: <PaymentsIcon fontSize="small" />,
     children: [
-      { label: "Fee Plans", to: "/admin/fees/plans" },
+      { label: "Fee Plans", to: "/admin/fees" },
       { label: "Invoices", to: "/admin/fees/invoices" },
       { label: "Payments", to: "/admin/fees/payments" },
-      { label: "Pending Fees", to: "/admin/fees/pending" },
+      { label: "Pending Fees", to: "/admin/fees/payments/pending" },
       { label: "Fee Reports", to: "/admin/fees/reports" },
     ],
   },
@@ -162,7 +162,7 @@ export const adminNavItems: NavItem[] = [
 
   {
     label: "Settings",
-    to: "/admin/settings",
+    to: "/admin/settings/automation",
     icon: <SettingsIcon fontSize="small" />,
     children: [
       { label: "Academic Years", to: "/admin/academic-years" },
