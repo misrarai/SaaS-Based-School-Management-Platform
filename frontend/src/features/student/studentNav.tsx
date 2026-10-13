@@ -6,6 +6,8 @@ import QuizIcon from "@mui/icons-material/QuizOutlined";
 import AssignmentIcon from "@mui/icons-material/AssignmentOutlined";
 import FactCheckIcon from "@mui/icons-material/FactCheckOutlined";
 import BarChartIcon from "@mui/icons-material/BarChartOutlined";
+import CampaignIcon from "@mui/icons-material/CampaignOutlined";
+import EditNoteIcon from "@mui/icons-material/EditNoteOutlined";
 import type { NavItem } from "../../components/AppShell";
 
 export const studentNavItems: NavItem[] = [
@@ -13,6 +15,16 @@ export const studentNavItems: NavItem[] = [
     label: "Dashboard",
     to: "/student",
     icon: <DashboardIcon fontSize="small" />,
+  },
+  {
+    label: "Notices",
+    to: "/student/notices",
+    icon: <CampaignIcon fontSize="small" />,
+  },
+  {
+    label: "Homework",
+    to: "/student/homework",
+    icon: <EditNoteIcon fontSize="small" />,
   },
   {
     label: "Live Classes",

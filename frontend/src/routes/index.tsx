@@ -155,6 +155,8 @@ import { StudentVideosPage } from "../features/student/videos/StudentVideosPage"
 import { StudentBooksPage } from "../features/student/books/StudentBooksPage";
 import { StudentAttendancePage } from "../features/student/attendance/StudentAttendancePage";
 import { StudentProgressPage } from "../features/student/progress/StudentProgressPage";
+import { StudentNoticesPage } from "../features/student/notices/StudentNoticesPage";
+import { StudentHomeworkPage } from "../features/student/homework/StudentHomeworkPage";
 import { ParentDashboard } from "../features/parent/ParentDashboard";
 import { TimetablePage as ParentTimetablePage } from "../features/parent/TimetablePage";
 import { AttendanceSummaryPage as ParentAttendanceSummaryPage } from "../features/parent/attendance/AttendanceSummaryPage";
@@ -991,6 +993,22 @@ export function AppRoutes() {
         }
       />
       {/* ── Student new pages ── */}
+      <Route
+        path="/student/notices"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentNoticesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/homework"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentHomeworkPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/student/live-classes"
         element={
