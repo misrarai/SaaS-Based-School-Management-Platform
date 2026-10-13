@@ -7,6 +7,7 @@ import VideoLibraryIcon from "@mui/icons-material/VideoLibraryOutlined";
 import MenuBookIcon from "@mui/icons-material/MenuBookOutlined";
 import QuizIcon from "@mui/icons-material/QuizOutlined";
 import MessageIcon from "@mui/icons-material/MessageOutlined";
+import CampaignIcon from "@mui/icons-material/CampaignOutlined";
 import type { NavItem } from "../../components/AppShell";
 
 export const parentNavItems: NavItem[] = [
@@ -14,6 +15,11 @@ export const parentNavItems: NavItem[] = [
     label: "Dashboard",
     to: "/parent",
     icon: <DashboardIcon fontSize="small" />,
+  },
+  {
+    label: "Notices",
+    to: "/parent/notices",
+    icon: <CampaignIcon fontSize="small" />,
   },
   {
     label: "Attendance",
@@ -42,7 +48,7 @@ export const parentNavItems: NavItem[] = [
   },
   {
     label: "Assignments",
-    to: "/parent/gradebook",
+    to: "/parent/assignments",
     icon: <AssignmentIcon fontSize="small" />,
   },
   {

@@ -89,19 +89,19 @@ export const adminNavItems: NavItem[] = [
 
   {
     label: "Video Lectures",
-    to: "/admin/lms/lectures",
+    to: "/admin/lms/videos",
     icon: <VideoLibraryIcon fontSize="small" />,
     children: [
-      { label: "All Videos", to: "/admin/lms/lectures" },
+      { label: "All Videos", to: "/admin/lms/videos" },
     ],
   },
 
   {
     label: "Books Library",
-    to: "/admin/lms/lectures",
+    to: "/admin/lms/books",
     icon: <MenuBookIcon fontSize="small" />,
     children: [
-      { label: "All Books", to: "/admin/lms/lectures" },
+      { label: "All Books", to: "/admin/lms/books" },
     ],
   },
 
@@ -162,9 +162,10 @@ export const adminNavItems: NavItem[] = [
 
   {
     label: "Settings",
-    to: "/admin/settings/automation",
+    to: "/admin/settings",
     icon: <SettingsIcon fontSize="small" />,
     children: [
+      { label: "All Settings", to: "/admin/settings" },
       { label: "Academic Years", to: "/admin/academic-years" },
       { label: "Student Promotion", to: "/admin/settings/promotion" },
       { label: "Automation", to: "/admin/settings/automation" },

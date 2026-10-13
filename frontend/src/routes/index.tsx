@@ -94,6 +94,11 @@ import { ParentMessagesPage } from "../features/parent/messages/ParentMessagesPa
 import { ParentLiveClassesPage } from "../features/parent/live/ParentLiveClassesPage";
 import { ParentVideosPage } from "../features/parent/videos/ParentVideosPage";
 import { ParentBooksPage } from "../features/parent/books/ParentBooksPage";
+import { ParentNoticesPage } from "../features/parent/notices/ParentNoticesPage";
+import { ParentAssignmentsPage } from "../features/parent/assignments/ParentAssignmentsPage";
+import { AdminVideosPage } from "../features/admin/lms/AdminVideosPage";
+import { AdminBooksPage } from "../features/admin/lms/AdminBooksPage";
+import { AdminSettingsPage } from "../features/admin/settings/AdminSettingsPage";
 import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
 import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
 import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
@@ -487,6 +492,30 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <LmsReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/videos"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminVideosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/books"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminBooksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/settings"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminSettingsPage />
           </ProtectedRoute>
         }
       />
@@ -1098,6 +1127,22 @@ export function AppRoutes() {
         }
       />
       {/* ── Parent new pages ── */}
+      <Route
+        path="/parent/notices"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <ParentNoticesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent/assignments"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <ParentAssignmentsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/parent/live-classes"
         element={
