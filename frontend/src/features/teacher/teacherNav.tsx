@@ -29,17 +29,17 @@ export const teacherNavItems: NavItem[] = [
   },
   {
     label: "Live Classes",
-    to: "/teacher/live-classes",
+    to: "/teacher/live",
     icon: <LiveTvIcon fontSize="small" />,
   },
   {
     label: "Video Lectures",
-    to: "/teacher/resources",
+    to: "/teacher/videos",
     icon: <VideoLibraryIcon fontSize="small" />,
   },
   {
     label: "Books (Upload)",
-    to: "/teacher/resources",
+    to: "/teacher/books",
     icon: <MenuBookIcon fontSize="small" />,
   },
   {

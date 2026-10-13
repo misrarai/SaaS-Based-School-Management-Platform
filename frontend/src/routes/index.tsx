@@ -137,6 +137,9 @@ import { QuizResultsPage } from "../features/teacher/quizzes/QuizResultsPage";
 import { GradeAttemptPage } from "../features/teacher/quizzes/GradeAttemptPage";
 import { GradebookPage as TeacherGradebookPage } from "../features/teacher/gradebook/GradebookPage";
 import { LiveClassesPage } from "../features/teacher/live/LiveClassesPage";
+import { TeacherLiveClassesPage } from "../features/teacher/live/TeacherLiveClassesPage";
+import { TeacherVideosPage } from "../features/teacher/videos/TeacherVideosPage";
+import { TeacherBooksPage } from "../features/teacher/books/TeacherBooksPage";
 import { MyPayoutsPage } from "../features/teacher/payouts/MyPayoutsPage";
 import { StudentDashboard } from "../features/student/StudentDashboard";
 import { TimetablePage as StudentTimetablePage } from "../features/student/TimetablePage";
@@ -900,6 +903,31 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
             <LiveClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── Teacher new dedicated pages ── */}
+      <Route
+        path="/teacher/live"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <TeacherLiveClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/videos"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <TeacherVideosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/books"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <TeacherBooksPage />
           </ProtectedRoute>
         }
       />
