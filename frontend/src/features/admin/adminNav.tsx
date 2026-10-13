@@ -48,7 +48,7 @@ export const adminNavItems: NavItem[] = [
     children: [
       { label: "Dashboard", to: "/admin/front-office" },
       { label: "Quick SMS", to: "/admin/communication/sms" },
-      { label: "People Directory", to: soon("front-desk-people-directory") },
+      { label: "People Directory", to: "/admin/people-directory" },
       { label: "Visitor In/Out", to: "/admin/front-office/visitors" },
       { label: "Admission Inquiry", to: "/admin/front-office/enquiries" },
       { label: "Parcel Management", to: "/admin/front-office/postal" },
@@ -144,11 +144,11 @@ export const adminNavItems: NavItem[] = [
       { label: "Leave · Staff Requests", to: "/admin/payroll/leaves" },
       { label: "Leave · Student Requests", to: soon("attendance-student-leaves") },
       { label: "Leave · Corrections", to: soon("attendance-regularizations") },
-      { label: "Attendance Reports", to: soon("attendance-reports") },
+      { label: "Attendance Reports", to: "/admin/attendance/reports" },
       { label: "Attendance Alerts", to: soon("attendance-alerts") },
       { label: "Leave Types", to: "/admin/payroll/leave-types" },
       { label: "Holiday Calendar", to: "/admin/attendance/holidays" },
-      { label: "Attendance Settings", to: soon("attendance-settings") },
+      { label: "Attendance Settings", to: "/admin/attendance/settings" },
       { label: "Biometric · Devices", to: soon("attendance-devices") },
       { label: "Biometric · Punch Errors", to: soon("attendance-unmatched-punches") },
     ],
@@ -185,11 +185,11 @@ export const adminNavItems: NavItem[] = [
 
   {
     label: "Date Sheet",
-    to: soon("datesheet-create"),
+    to: "/admin/datesheet",
     icon: <EventNoteIcon fontSize="small" />,
     children: [
-      { label: "Create", to: soon("datesheet-create") },
-      { label: "View Date Sheet", to: soon("datesheet-view") },
+      { label: "Create", to: "/admin/datesheet" },
+      { label: "View Date Sheet", to: "/admin/datesheet/view" },
       { label: "Reports", to: soon("datesheet-reports") },
       { label: "Exam Halls", to: soon("datesheet-halls") },
       { label: "Settings", to: soon("datesheet-settings") },
@@ -271,10 +271,10 @@ export const adminNavItems: NavItem[] = [
 
   {
     label: "Curriculum",
-    to: soon("curriculum-subjects"),
+    to: "/admin/curriculum",
     icon: <MenuBookIcon fontSize="small" />,
     children: [
-      { label: "Subjects", to: soon("curriculum-subjects") },
+      { label: "Subjects", to: "/admin/curriculum/subjects" },
       { label: "Diary", to: soon("curriculum-diary") },
       { label: "Reports", to: soon("curriculum-reports") },
     ],

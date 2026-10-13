@@ -83,6 +83,11 @@ import { SponsorshipsPage } from "../features/admin/hifz/SponsorshipsPage";
 import { DownloadCenterPage } from "../features/admin/downloads/DownloadCenterPage";
 import { RecruitmentPage } from "../features/admin/hr/RecruitmentPage";
 import { HolidayCalendarPage } from "../features/admin/attendance/HolidayCalendarPage";
+import { PeopleDirectoryPage } from "../features/admin/people/PeopleDirectoryPage";
+import { CurriculumPage } from "../features/admin/curriculum/CurriculumPage";
+import { AttendanceSettingsPage } from "../features/admin/attendance/AttendanceSettingsPage";
+import { AttendanceReportsPage } from "../features/admin/attendance/AttendanceReportsPage";
+import { DatesheetManagerPage } from "../features/admin/datesheet/DatesheetManagerPage";
 import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
 import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
 import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
@@ -690,6 +695,66 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <HostelAllocationsPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── People Directory ── */}
+      <Route
+        path="/admin/people-directory"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <PeopleDirectoryPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── Curriculum ── */}
+      <Route
+        path="/admin/curriculum"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <CurriculumPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/curriculum/subjects"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <CurriculumPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── Date Sheet standalone ── */}
+      <Route
+        path="/admin/datesheet"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DatesheetManagerPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/datesheet/view"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <DatesheetManagerPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── Attendance extras ── */}
+      <Route
+        path="/admin/attendance/reports"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AttendanceReportsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/attendance/settings"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AttendanceSettingsPage />
           </ProtectedRoute>
         }
       />
