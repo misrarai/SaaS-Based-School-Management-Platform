@@ -10,6 +10,7 @@ import CampaignIcon from "@mui/icons-material/CampaignOutlined";
 import EditNoteIcon from "@mui/icons-material/EditNoteOutlined";
 import EventIcon from "@mui/icons-material/EventOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
+import GradingIcon from "@mui/icons-material/GradingOutlined";
 import type { NavItem } from "../../components/AppShell";
 
 export const studentNavItems: NavItem[] = [
@@ -47,6 +48,11 @@ export const studentNavItems: NavItem[] = [
     label: "Quizzes",
     to: "/student/quizzes",
     icon: <QuizIcon fontSize="small" />,
+  },
+  {
+    label: "Quiz Results",
+    to: "/student/quiz-history",
+    icon: <GradingIcon fontSize="small" />,
   },
   {
     label: "Assignments",
