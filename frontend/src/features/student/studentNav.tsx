@@ -8,6 +8,8 @@ import FactCheckIcon from "@mui/icons-material/FactCheckOutlined";
 import BarChartIcon from "@mui/icons-material/BarChartOutlined";
 import CampaignIcon from "@mui/icons-material/CampaignOutlined";
 import EditNoteIcon from "@mui/icons-material/EditNoteOutlined";
+import EventIcon from "@mui/icons-material/EventOutlined";
+import PersonIcon from "@mui/icons-material/PersonOutlined";
 import type { NavItem } from "../../components/AppShell";
 
 export const studentNavItems: NavItem[] = [
@@ -60,5 +62,15 @@ export const studentNavItems: NavItem[] = [
     label: "My Progress",
     to: "/student/progress",
     icon: <BarChartIcon fontSize="small" />,
+  },
+  {
+    label: "Exam Schedule",
+    to: "/student/exams",
+    icon: <EventIcon fontSize="small" />,
+  },
+  {
+    label: "My Profile",
+    to: "/student/profile",
+    icon: <PersonIcon fontSize="small" />,
   },
 ];
