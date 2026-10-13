@@ -88,6 +88,9 @@ import { CurriculumPage } from "../features/admin/curriculum/CurriculumPage";
 import { AttendanceSettingsPage } from "../features/admin/attendance/AttendanceSettingsPage";
 import { AttendanceReportsPage } from "../features/admin/attendance/AttendanceReportsPage";
 import { DatesheetManagerPage } from "../features/admin/datesheet/DatesheetManagerPage";
+import { ParentsListPage } from "../features/admin/parents/ParentsListPage";
+import { SendMessageToParentPage } from "../features/admin/parents/SendMessageToParentPage";
+import { ParentMessagesPage } from "../features/parent/messages/ParentMessagesPage";
 import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
 import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
 import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
@@ -758,6 +761,23 @@ export function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      {/* ── Admin Parents ── */}
+      <Route
+        path="/admin/parents"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <ParentsListPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/parents/message"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SendMessageToParentPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/teacher"
         element={
@@ -971,6 +991,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["parent"]}>
             <ParentGradebookPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/parent/messages"
+        element={
+          <ProtectedRoute allowedRoles={["parent"]}>
+            <ParentMessagesPage />
           </ProtectedRoute>
         }
       />
