@@ -15,6 +15,7 @@ import { StaffPage } from "../features/admin/StaffPage";
 import { RegisterStudentPage } from "../features/admin/students/RegisterStudentPage";
 import { ImportStudentsPage } from "../features/admin/students/ImportStudentsPage";
 import { WithdrawalRegisterPage } from "../features/admin/students/WithdrawalRegisterPage";
+import { StudentDocumentsPage } from "../features/admin/students/StudentDocumentsPage";
 import { ExtraCoachingPage } from "../features/admin/students/ExtraCoachingPage";
 import { StudentReportsPage } from "../features/admin/students/StudentReportsPage";
 import { StudentCertificatesPage } from "../features/admin/students/StudentCertificatesPage";
@@ -252,6 +253,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <WithdrawalRegisterPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/students/documents"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <StudentDocumentsPage />
           </ProtectedRoute>
         }
       />
