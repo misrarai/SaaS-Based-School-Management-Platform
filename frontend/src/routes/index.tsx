@@ -144,6 +144,11 @@ import { ResourceCenterPage } from "../features/student/resources/ResourceCenter
 import { AssignmentsPage as StudentAssignmentsPage } from "../features/student/assignments/AssignmentsPage";
 import { QuizListPage as StudentQuizListPage } from "../features/student/quizzes/QuizListPage";
 import { TakeQuizPage } from "../features/student/quizzes/TakeQuizPage";
+import { StudentLiveClassesPage } from "../features/student/live/StudentLiveClassesPage";
+import { StudentVideosPage } from "../features/student/videos/StudentVideosPage";
+import { StudentBooksPage } from "../features/student/books/StudentBooksPage";
+import { StudentAttendancePage } from "../features/student/attendance/StudentAttendancePage";
+import { StudentProgressPage } from "../features/student/progress/StudentProgressPage";
 import { ParentDashboard } from "../features/parent/ParentDashboard";
 import { TimetablePage as ParentTimetablePage } from "../features/parent/TimetablePage";
 import { AttendanceSummaryPage as ParentAttendanceSummaryPage } from "../features/parent/attendance/AttendanceSummaryPage";
@@ -951,6 +956,47 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["student"]}>
             <TakeQuizPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* ── Student new pages ── */}
+      <Route
+        path="/student/live-classes"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentLiveClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/videos"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentVideosPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/books"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentBooksPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/attendance"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentAttendancePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/progress"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <StudentProgressPage />
           </ProtectedRoute>
         }
       />
