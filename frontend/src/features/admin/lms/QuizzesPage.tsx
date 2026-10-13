@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
@@ -9,6 +10,7 @@ import {
   DialogContent,
   DialogTitle,
   Paper,
+  Stack,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +20,7 @@ import {
   Typography,
 } from "@mui/material";
 import AssessmentIcon from "@mui/icons-material/AssessmentOutlined";
+import AddIcon from "@mui/icons-material/Add";
 import { darkTableHeadSx } from "../../../components/tableStyles";
 import { getResults, listQuizzes, type Quiz } from "../../../api/quizzes";
 import { LmsShell, PageHeader, useAcademics, fmtDateTime } from "./common";
@@ -69,16 +72,19 @@ function ResultsDialog({ quiz, onClose }: { quiz: Quiz; onClose: () => void }) {
 }
 
 export function AdminQuizzesPage() {
+  const navigate = useNavigate();
   const academics = useAcademics();
   const [resultsFor, setResultsFor] = useState<Quiz | null>(null);
   const quizzes = useQuery({ queryKey: ["lms-quizzes"], queryFn: () => listQuizzes() });
 
   return (
     <LmsShell title="Quizzes">
-      <PageHeader title="Quizzes" />
-      <Alert severity="info" sx={{ mb: 2 }}>
-        Quizzes are created by teachers in their portal. This is the school-wide overview — open any quiz to see its results.
-      </Alert>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }}>
+        <PageHeader title="Quizzes" />
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate("/admin/lms/quizzes/new")}>
+          Create Quiz
+        </Button>
+      </Stack>
 
       <TableContainer component={Paper} variant="outlined">
         <Table size="small">

@@ -166,6 +166,7 @@ import { StudentHomeworkPage } from "../features/student/homework/StudentHomewor
 import { StudentProfilePage } from "../features/student/profile/StudentProfilePage";
 import { StudentExamSchedulePage } from "../features/student/exams/StudentExamSchedulePage";
 import { QuizHistoryPage } from "../features/student/quizzes/QuizHistoryPage";
+import { AdminQuizBuilderPage } from "../features/admin/lms/AdminQuizBuilderPage";
 import { ParentDashboard } from "../features/parent/ParentDashboard";
 import { TimetablePage as ParentTimetablePage } from "../features/parent/TimetablePage";
 import { AttendanceSummaryPage as ParentAttendanceSummaryPage } from "../features/parent/attendance/AttendanceSummaryPage";
@@ -496,6 +497,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <AdminQuizzesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/lms/quizzes/new"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <AdminQuizBuilderPage />
           </ProtectedRoute>
         }
       />
