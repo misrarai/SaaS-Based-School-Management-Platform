@@ -27,7 +27,7 @@ export const adminNavItems: NavItem[] = [
     to: "/admin/students",
     icon: <SchoolIcon fontSize="small" />,
     children: [
-      { label: "Student Dashboard", to: "/admin/students" },
+      { label: "Student Analytics", to: "/admin/students/analytics" },
       { label: "Active Students", to: "/admin/students" },
       { label: "Family List", to: "/admin/families" },
       { label: "Admission Register", to: "/admin/students/register" },
@@ -62,8 +62,9 @@ export const adminNavItems: NavItem[] = [
     to: "/admin/classes",
     icon: <ClassIcon fontSize="small" />,
     children: [
-      { label: "All Classes (1-10)", to: "/admin/classes" },
-      { label: "Subjects", to: "/admin/curriculum/subjects" },
+      { label: "Class List", to: "/admin/classes" },
+      { label: "Sections", to: "/admin/classes/sections" },
+      { label: "Subjects", to: "/admin/classes/subjects" },
       { label: "Timetable", to: "/admin/schedule" },
     ],
   },

@@ -14,9 +14,11 @@ from app.schemas.academic import (
     SectionCreate,
     SectionOut,
     SectionUpdate,
+    SectionWithClass,
     SubjectCreate,
     SubjectOut,
     SubjectUpdate,
+    SubjectWithClass,
 )
 from app.services.academic_service import AcademicService
 
@@ -84,6 +86,22 @@ def classes_overview(
     db: Session = Depends(get_db),
 ) -> list[ClassOverview]:
     return AcademicService(db).class_overview(current_user.tenant_id)
+
+
+@router.get("/sections", response_model=list[SectionWithClass])
+def list_all_sections(
+    current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
+    db: Session = Depends(get_db),
+) -> list[SectionWithClass]:
+    return AcademicService(db).list_all_sections(current_user.tenant_id)
+
+
+@router.get("/subjects", response_model=list[SubjectWithClass])
+def list_all_subjects(
+    current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
+    db: Session = Depends(get_db),
+) -> list[SubjectWithClass]:
+    return AcademicService(db).list_all_subjects(current_user.tenant_id)
 
 
 @router.patch("/classes/{class_id}", response_model=ClassGradeOut)

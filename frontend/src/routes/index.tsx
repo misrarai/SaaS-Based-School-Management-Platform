@@ -8,6 +8,8 @@ import { ResetPasswordPage } from "../pages/ResetPasswordPage";
 import { VerifyEmailPage } from "../pages/VerifyEmailPage";
 import { AdminDashboard } from "../features/admin/AdminDashboard";
 import { ClassesPage } from "../features/admin/ClassesPage";
+import { SectionsPage } from "../features/admin/classes/SectionsPage";
+import { SubjectsPage } from "../features/admin/classes/SubjectsPage";
 import { TeachersPage } from "../features/admin/TeachersPage";
 import { StudentsPage } from "../features/admin/StudentsPage";
 import { FamiliesPage } from "../features/admin/FamiliesPage";
@@ -167,11 +169,14 @@ import { StudentProfilePage } from "../features/student/profile/StudentProfilePa
 import { StudentExamSchedulePage } from "../features/student/exams/StudentExamSchedulePage";
 import { QuizHistoryPage } from "../features/student/quizzes/QuizHistoryPage";
 import { AdminQuizBuilderPage } from "../features/admin/lms/AdminQuizBuilderPage";
+import { StudentAnalyticsPage } from "../features/admin/students/StudentAnalyticsPage";
 import { ParentDashboard } from "../features/parent/ParentDashboard";
 import { TimetablePage as ParentTimetablePage } from "../features/parent/TimetablePage";
 import { AttendanceSummaryPage as ParentAttendanceSummaryPage } from "../features/parent/attendance/AttendanceSummaryPage";
 import { ParentFeesPage } from "../features/parent/fees/ParentFeesPage";
 import { GradebookPage as ParentGradebookPage } from "../features/parent/assignments/GradebookPage";
+import { SuperAdminDashboard } from "../features/superAdmin/SuperAdminDashboard";
+import { SchoolsPage } from "../features/superAdmin/SchoolsPage";
 
 function HomeRedirect() {
   const { user, isLoading } = useAuth();
@@ -188,6 +193,24 @@ export function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      {/* Super Admin routes */}
+      <Route
+        path="/super_admin"
+        element={
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SuperAdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/super_admin/schools"
+        element={
+          <ProtectedRoute allowedRoles={["super_admin"]}>
+            <SchoolsPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/admin"
         element={
@@ -201,6 +224,22 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <ClassesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/classes/sections"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SectionsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/classes/subjects"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <SubjectsPage />
           </ProtectedRoute>
         }
       />
@@ -225,6 +264,14 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
             <TeachersPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/students/analytics"
+        element={
+          <ProtectedRoute allowedRoles={["admin"]}>
+            <StudentAnalyticsPage />
           </ProtectedRoute>
         }
       />

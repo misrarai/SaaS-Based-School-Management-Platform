@@ -6,6 +6,10 @@ export interface ClassGrade {
   level_order: number;
   academic_year: string;
   academic_year_id: string | null;
+  class_fee: number | null;
+  capacity: number | null;
+  incharge_id: string | null;
+  assistant_incharge_id: string | null;
 }
 
 export interface Section {
@@ -26,7 +30,18 @@ export function listClasses() {
   return apiClient.get<ClassGrade[]>("/classes").then((res) => res.data);
 }
 
-export function createClass(payload: { name: string; level_order: number; academic_year?: string; academic_year_id?: string }) {
+export interface ClassCreatePayload {
+  name: string;
+  level_order: number;
+  academic_year?: string;
+  academic_year_id?: string;
+  class_fee?: number | null;
+  capacity?: number | null;
+  incharge_id?: string | null;
+  assistant_incharge_id?: string | null;
+}
+
+export function createClass(payload: ClassCreatePayload) {
   return apiClient.post<ClassGrade>("/classes", payload).then((res) => res.data);
 }
 
@@ -53,10 +68,23 @@ export interface SectionOverview extends Section {
   student_count: number;
 }
 
+export interface SectionWithClass extends SectionOverview {
+  class_name: string;
+  academic_year: string;
+  level_order: number;
+}
+
+export interface SubjectWithClass extends Subject {
+  class_name: string;
+  academic_year: string;
+}
+
 export interface ClassOverview extends ClassGrade {
   student_count: number;
   sections: SectionOverview[];
   subjects: Subject[];
+  incharge_name: string | null;
+  assistant_incharge_name: string | null;
 }
 
 /** Every class with its sections (class teacher + head-count) and subjects in one call. */
@@ -64,7 +92,30 @@ export function getClassesOverview() {
   return apiClient.get<ClassOverview[]>("/classes/overview").then((res) => res.data);
 }
 
-export function updateClass(id: string, payload: Partial<{ name: string; level_order: number; academic_year_id: string }>) {
+/** Flat list of all sections across all classes. */
+export function listAllSections() {
+  return apiClient.get<SectionWithClass[]>("/sections").then((res) => res.data);
+}
+
+/** Flat list of all subjects across all classes. */
+export function listAllSubjects() {
+  return apiClient.get<SubjectWithClass[]>("/subjects").then((res) => res.data);
+}
+
+export function updateClass(
+  id: string,
+  payload: Partial<{
+    name: string;
+    level_order: number;
+    academic_year_id: string;
+    class_fee: number | null;
+    capacity: number | null;
+    incharge_id: string | null;
+    assistant_incharge_id: string | null;
+    clear_incharge: boolean;
+    clear_assistant: boolean;
+  }>,
+) {
   return apiClient.patch<ClassGrade>(`/classes/${id}`, payload).then((res) => res.data);
 }
 

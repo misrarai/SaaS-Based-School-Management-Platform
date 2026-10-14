@@ -46,3 +46,9 @@ def require_role(*roles: RoleEnum):
         return user
 
     return dependency
+
+
+def require_super_admin(user: User = Depends(get_current_user)) -> User:
+    if user.role != RoleEnum.SUPER_ADMIN:
+        raise ForbiddenError("Super admin access required")
+    return user

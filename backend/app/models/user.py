@@ -10,6 +10,7 @@ from app.models.mixins import GUID, TimestampMixin, UUIDPKMixin
 
 
 class RoleEnum(str, enum.Enum):
+    SUPER_ADMIN = "super_admin"
     ADMIN = "admin"
     TEACHER = "teacher"
     STUDENT = "student"

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -36,6 +36,15 @@ class ClassGrade(UUIDPKMixin, TimestampMixin, Base):
     academic_year: Mapped[str] = mapped_column(String(20), nullable=False)
     academic_year_id: Mapped[uuid.UUID | None] = mapped_column(
         GUID(), ForeignKey("academic_years.id"), nullable=True, index=True
+    )
+    # Optional Skoolzoom-style fields
+    class_fee: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    incharge_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("teacher_profiles.id"), nullable=True, index=True
+    )
+    assistant_incharge_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("teacher_profiles.id"), nullable=True, index=True
     )
 
 

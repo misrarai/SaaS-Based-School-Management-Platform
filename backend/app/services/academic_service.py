@@ -29,9 +29,11 @@ from app.schemas.academic import (
     SectionOut,
     SectionOverview,
     SectionUpdate,
+    SectionWithClass,
     SubjectCreate,
     SubjectOut,
     SubjectUpdate,
+    SubjectWithClass,
 )
 
 
@@ -46,7 +48,14 @@ class AcademicService:
 
     # --- Academic years -------------------------------------------------
 
+    @staticmethod
+    def _validate_dates(start_date, end_date) -> None:
+        if end_date <= start_date:
+            raise ConflictError("end_date must be later than start_date")
+
     def create_academic_year(self, tenant_id: uuid.UUID, payload: AcademicYearCreate) -> AcademicYear:
+        self._validate_dates(payload.start_date, payload.end_date)
+
         if self.academic_years.get_by_name(tenant_id, payload.name) is not None:
             raise ConflictError(f"Academic year '{payload.name}' already exists")
 
@@ -78,6 +87,10 @@ class AcademicService:
     def update_academic_year(self, tenant_id: uuid.UUID, year_id: uuid.UUID, payload: AcademicYearUpdate) -> AcademicYear:
         year = self.get_academic_year_or_404(tenant_id, year_id)
 
+        new_start = payload.start_date if payload.start_date is not None else year.start_date
+        new_end = payload.end_date if payload.end_date is not None else year.end_date
+        self._validate_dates(new_start, new_end)
+
         if payload.name is not None and payload.name != year.name:
             if self.academic_years.get_by_name(tenant_id, payload.name) is not None:
                 raise ConflictError(f"Academic year '{payload.name}' already exists")
@@ -93,6 +106,23 @@ class AcademicService:
 
         self.db.commit()
         self.db.refresh(year)
+        return year
+
+    def activate_academic_year(self, tenant_id: uuid.UUID, year_id: uuid.UUID) -> AcademicYear:
+        year = self.get_academic_year_or_404(tenant_id, year_id)
+        if not year.is_active:
+            self.academic_years.deactivate_all(tenant_id)
+            year.is_active = True
+            self.db.commit()
+            self.db.refresh(year)
+        return year
+
+    def deactivate_academic_year(self, tenant_id: uuid.UUID, year_id: uuid.UUID) -> AcademicYear:
+        year = self.get_academic_year_or_404(tenant_id, year_id)
+        if year.is_active:
+            year.is_active = False
+            self.db.commit()
+            self.db.refresh(year)
         return year
 
     # --- Class grades / sections / subjects -------------------------------------------------
@@ -125,6 +155,10 @@ class AcademicService:
                 level_order=payload.level_order,
                 academic_year=academic_year_label,
                 academic_year_id=academic_year.id if academic_year else None,
+                class_fee=payload.class_fee,
+                capacity=payload.capacity,
+                incharge_id=payload.incharge_id,
+                assistant_incharge_id=payload.assistant_incharge_id,
             )
         )
         self.db.commit()
@@ -166,6 +200,18 @@ class AcademicService:
         class_grade.academic_year_id = new_year_id
         if payload.level_order is not None:
             class_grade.level_order = payload.level_order
+        if payload.class_fee is not None:
+            class_grade.class_fee = payload.class_fee
+        if payload.capacity is not None:
+            class_grade.capacity = payload.capacity
+        if payload.incharge_id is not None:
+            class_grade.incharge_id = payload.incharge_id
+        elif payload.clear_incharge:
+            class_grade.incharge_id = None
+        if payload.assistant_incharge_id is not None:
+            class_grade.assistant_incharge_id = payload.assistant_incharge_id
+        elif payload.clear_assistant:
+            class_grade.assistant_incharge_id = None
 
         self.db.commit()
         self.db.refresh(class_grade)
@@ -316,6 +362,8 @@ class AcademicService:
             ClassOverview(
                 **ClassGradeOut.model_validate(c).model_dump(exclude={"grade_band"}),
                 student_count=class_counts.get(c.id, 0),
+                incharge_name=teacher_names.get(c.incharge_id) if c.incharge_id else None,
+                assistant_incharge_name=teacher_names.get(c.assistant_incharge_id) if c.assistant_incharge_id else None,
                 sections=[
                     SectionOverview(
                         **SectionOut.model_validate(s).model_dump(),
@@ -328,6 +376,56 @@ class AcademicService:
                 subjects=[SubjectOut.model_validate(s) for s in subjects if s.class_grade_id == c.id],
             )
             for c in classes
+        ]
+
+    def list_all_sections(self, tenant_id: uuid.UUID) -> list[SectionWithClass]:
+        """Flat list of every section with its class name + student counts — for GET /sections."""
+        classes = {c.id: c for c in self.class_grades.list(tenant_id)}
+        sections = list(
+            self.db.execute(select(Section).where(Section.tenant_id == tenant_id).order_by(Section.name)).scalars()
+        )
+        section_counts: dict[uuid.UUID, int] = {}
+        for section_id, n in self.db.execute(
+            select(StudentProfile.section_id, func.count())
+            .where(StudentProfile.tenant_id == tenant_id, StudentProfile.status == "active", StudentProfile.section_id.isnot(None))
+            .group_by(StudentProfile.section_id)
+        ).all():
+            section_counts[section_id] = n
+        teacher_names = dict(
+            self.db.execute(
+                select(TeacherProfile.id, User.full_name)
+                .join(User, User.id == TeacherProfile.user_id)
+                .where(TeacherProfile.tenant_id == tenant_id)
+            ).all()
+        )
+        result = []
+        for s in sections:
+            cls = classes.get(s.class_grade_id)
+            result.append(
+                SectionWithClass(
+                    **SectionOut.model_validate(s).model_dump(),
+                    class_teacher_name=teacher_names.get(s.class_teacher_id),
+                    student_count=section_counts.get(s.id, 0),
+                    class_name=cls.name if cls else "Unknown",
+                    academic_year=cls.academic_year if cls else "",
+                    level_order=cls.level_order if cls else 0,
+                )
+            )
+        return result
+
+    def list_all_subjects(self, tenant_id: uuid.UUID) -> list[SubjectWithClass]:
+        """Flat list of every subject with its class name — for GET /subjects."""
+        classes = {c.id: c for c in self.class_grades.list(tenant_id)}
+        subjects = list(
+            self.db.execute(select(Subject).where(Subject.tenant_id == tenant_id).order_by(Subject.name)).scalars()
+        )
+        return [
+            SubjectWithClass(
+                **SubjectOut.model_validate(s).model_dump(),
+                class_name=classes[s.class_grade_id].name if s.class_grade_id in classes else "Unknown",
+                academic_year=classes[s.class_grade_id].academic_year if s.class_grade_id in classes else "",
+            )
+            for s in subjects
         ]
 
     def create_section(self, tenant_id: uuid.UUID, class_grade_id: uuid.UUID, payload: SectionCreate) -> Section:

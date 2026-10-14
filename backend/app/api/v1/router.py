@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.api.v1.endpoints import super_admin
 from app.api.v1.endpoints import (
     academic_years,
     assignments,
@@ -27,6 +28,7 @@ from app.api.v1.endpoints import (
 from app.api.v1.endpoints import exams
 
 api_router = APIRouter(prefix="/api/v1")
+api_router.include_router(super_admin.router)
 api_router.include_router(auth.router)
 api_router.include_router(tenants.router)
 api_router.include_router(academic_years.router)

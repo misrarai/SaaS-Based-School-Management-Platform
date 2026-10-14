@@ -104,3 +104,22 @@ export interface DashboardOverview {
   cash_flow: DailyCashFlow[];
   admissions: DailyAdmissions[];
 }
+
+export interface StudentAnalytics {
+  active: number;
+  transferred: number;
+  alumni: number;
+  left_inactive: number;
+  at_risk: number;
+  avg_attendance_pct: number | null;
+  gender_split: { label: string; count: number }[];
+  by_status: { label: string; count: number }[];
+  total: number;
+}
+
+export function getStudentAnalytics(dateFrom?: string, dateTo?: string) {
+  const params: Record<string, string> = {};
+  if (dateFrom) params.date_from = dateFrom;
+  if (dateTo) params.date_to = dateTo;
+  return apiClient.get<StudentAnalytics>("/dashboard/student-analytics", { params }).then((r) => r.data);
+}
