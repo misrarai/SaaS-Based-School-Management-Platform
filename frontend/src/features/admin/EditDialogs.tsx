@@ -23,7 +23,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { updateTeacher, type Teacher } from "../../api/teachers";
+import { updateTeacher, type Teacher, type TeacherUpdatePayload } from "../../api/teachers";
 import { updateStaff, type StaffMember } from "../../api/staff";
 import { listFamilies, listFamilyStudents, updateFamily, type Family } from "../../api/families";
 import { updateFeePlan, type FeePlan } from "../../api/fees";
@@ -86,19 +86,42 @@ export function EditTeacherDialog({ teacher, onClose }: { teacher: Teacher; onCl
   const [fullName, setFullName] = useState(teacher.full_name);
   const [phone, setPhone] = useState(teacher.phone_number ?? "");
   const [qualification, setQualification] = useState(teacher.qualification ?? "");
+  const [employeeCode, setEmployeeCode] = useState(teacher.employee_code ?? "");
+  const [hireDate, setHireDate] = useState(teacher.hire_date ?? "");
   const m = useMutation({
-    mutationFn: () =>
-      updateTeacher(teacher.id, { full_name: fullName.trim(), phone_number: blank(phone), qualification: blank(qualification) }),
+    mutationFn: () => {
+      const payload: TeacherUpdatePayload = {
+        full_name: fullName.trim(),
+        phone_number: blank(phone),
+        qualification: blank(qualification),
+        employee_code: blank(employeeCode),
+        hire_date: hireDate || null,
+      };
+      return updateTeacher(teacher.id, payload);
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teachers"] });
       onClose();
     },
   });
   return (
-    <FormDialog open title="Edit teacher" onClose={onClose} onSubmit={() => m.mutate()} pending={m.isPending} error={m.error}>
+    <FormDialog open title="Edit teacher" onClose={onClose} onSubmit={() => m.mutate()} pending={m.isPending} error={m.error} maxWidth="sm">
       <TextField label="Email" value={teacher.email} disabled fullWidth helperText="Email can't be changed" />
-      <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required fullWidth />
-      <TextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} fullWidth />
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <TextField label="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} required fullWidth />
+        <TextField label="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} fullWidth />
+      </Stack>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+        <TextField label="Employee code" value={employeeCode} onChange={(e) => setEmployeeCode(e.target.value)} fullWidth />
+        <TextField
+          label="Joining date"
+          type="date"
+          value={hireDate}
+          onChange={(e) => setHireDate(e.target.value)}
+          fullWidth
+          slotProps={{ inputLabel: { shrink: true } }}
+        />
+      </Stack>
       <TextField label="Qualification" value={qualification} onChange={(e) => setQualification(e.target.value)} fullWidth />
     </FormDialog>
   );

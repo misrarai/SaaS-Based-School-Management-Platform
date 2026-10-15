@@ -15,7 +15,12 @@ class TeacherProfileRepository(BaseRepository[TeacherProfile]):
         )
         return self.db.execute(stmt).scalar_one_or_none()
 
-    def list_with_users(self, tenant_id: uuid.UUID, query: str | None = None) -> list[tuple[TeacherProfile, User]]:
+    def list_with_users(
+        self,
+        tenant_id: uuid.UUID,
+        query: str | None = None,
+        is_active: bool | None = None,
+    ) -> list[tuple[TeacherProfile, User]]:
         stmt = (
             select(TeacherProfile, User)
             .join(User, User.id == TeacherProfile.user_id)
@@ -31,6 +36,8 @@ class TeacherProfileRepository(BaseRepository[TeacherProfile]):
                     TeacherProfile.qualification.ilike(like),
                 )
             )
+        if is_active is not None:
+            stmt = stmt.where(User.is_active == is_active)
         stmt = stmt.order_by(User.full_name)
         return [(row[0], row[1]) for row in self.db.execute(stmt).all()]
 

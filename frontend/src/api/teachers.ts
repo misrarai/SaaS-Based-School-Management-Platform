@@ -18,11 +18,29 @@ export interface TeacherCreatePayload {
   password: string;
   phone_number?: string;
   employee_code?: string;
+  hire_date?: string;
   qualification?: string;
 }
 
-export function listTeachers(query?: string) {
-  return apiClient.get<Teacher[]>("/teachers", { params: { q: query || undefined } }).then((res) => res.data);
+export interface TeacherUpdatePayload {
+  full_name?: string;
+  phone_number?: string | null;
+  qualification?: string | null;
+  employee_code?: string | null;
+  hire_date?: string | null;
+  is_active?: boolean;
+}
+
+export function listTeachers(query?: string, isActive?: boolean) {
+  return apiClient
+    .get<Teacher[]>("/teachers", {
+      params: { q: query || undefined, is_active: isActive },
+    })
+    .then((res) => res.data);
+}
+
+export function getTeacher(teacherId: string) {
+  return apiClient.get<Teacher>(`/teachers/${teacherId}`).then((res) => res.data);
 }
 
 export function createTeacher(payload: TeacherCreatePayload) {
@@ -33,9 +51,14 @@ export function setTeacherActive(teacherId: string, isActive: boolean) {
   return apiClient.patch<Teacher>(`/teachers/${teacherId}`, { is_active: isActive }).then((res) => res.data);
 }
 
-export function updateTeacher(
-  teacherId: string,
-  payload: { full_name?: string; phone_number?: string | null; qualification?: string | null; is_active?: boolean },
-) {
+export function updateTeacher(teacherId: string, payload: TeacherUpdatePayload) {
   return apiClient.patch<Teacher>(`/teachers/${teacherId}`, payload).then((res) => res.data);
+}
+
+export function getMyTeacherProfile() {
+  return apiClient.get<Teacher>("/teachers/me").then((res) => res.data);
+}
+
+export function updateMyTeacherProfile(payload: Omit<TeacherUpdatePayload, "is_active">) {
+  return apiClient.patch<Teacher>("/teachers/me", payload).then((res) => res.data);
 }

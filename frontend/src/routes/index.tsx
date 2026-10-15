@@ -152,6 +152,7 @@ import { TeacherLiveClassesPage } from "../features/teacher/live/TeacherLiveClas
 import { TeacherVideosPage } from "../features/teacher/videos/TeacherVideosPage";
 import { TeacherBooksPage } from "../features/teacher/books/TeacherBooksPage";
 import { MyPayoutsPage } from "../features/teacher/payouts/MyPayoutsPage";
+import { TeacherProfilePage } from "../features/teacher/TeacherProfilePage";
 import { StudentDashboard } from "../features/student/StudentDashboard";
 import { TimetablePage as StudentTimetablePage } from "../features/student/TimetablePage";
 import { ResourceCenterPage } from "../features/student/resources/ResourceCenterPage";
@@ -1038,6 +1039,22 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["teacher"]}>
             <MyPayoutsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/profile"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <TeacherProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/teacher/parents/message"
+        element={
+          <ProtectedRoute allowedRoles={["teacher"]}>
+            <SendMessageToParentPage />
           </ProtectedRoute>
         }
       />
