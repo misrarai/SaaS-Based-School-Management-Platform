@@ -26,6 +26,9 @@ class StudentUpdate(BaseModel):
     section_id: uuid.UUID | None = None
     family_id: uuid.UUID | None = None
     roll_number: str | None = None
+    guardian_name: str | None = None
+    admission_date: date | None = None
+    date_of_birth: date | None = None
     status: str | None = None
     is_active: bool | None = None
     admission_detail: StudentAdmissionDetailIn | None = None

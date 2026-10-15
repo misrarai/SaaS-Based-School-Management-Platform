@@ -81,6 +81,7 @@ export interface StudentCreatePayload {
 
 export interface StudentListFilters {
   classGradeId?: string;
+  sectionId?: string;
   familyId?: string;
   status?: "active" | "old" | "withdrawn" | "all";
   query?: string;
@@ -90,6 +91,7 @@ export function listStudents(filters?: StudentListFilters | string) {
   const normalized: StudentListFilters = typeof filters === "string" ? { classGradeId: filters } : filters ?? {};
   const params = {
     class_grade_id: normalized.classGradeId || undefined,
+    section_id: normalized.sectionId || undefined,
     family_id: normalized.familyId || undefined,
     status: normalized.status || undefined,
     q: normalized.query || undefined,
@@ -159,9 +161,28 @@ export interface StudentUpdatePayload {
   section_id?: string | null;
   family_id?: string | null;
   roll_number?: string | null;
+  guardian_name?: string | null;
+  admission_date?: string | null;
+  date_of_birth?: string | null;
   status?: string;
   is_active?: boolean;
   admission_detail?: StudentAdmissionDetailPayload;
+}
+
+export interface StudentEnrollmentRecord {
+  id: string;
+  student_id: string;
+  class_grade_id: string;
+  section_id: string | null;
+  academic_year_id: string | null;
+  enrolled_at: string;
+  left_at: string | null;
+  status: string;
+  notes: string | null;
+}
+
+export function listStudentEnrollments(studentId: string) {
+  return apiClient.get<StudentEnrollmentRecord[]>(`/students/${studentId}/enrollments`).then((res) => res.data);
 }
 
 export function updateStudent(studentId: string, payload: StudentUpdatePayload) {

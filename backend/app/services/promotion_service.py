@@ -1,11 +1,14 @@
 import uuid
+from datetime import date
 
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import DomainError, NotFoundError
 from app.models.promotion import PromotionRule
+from app.models.student_enrollment import StudentEnrollment
 from app.repositories.academic_repo import ClassGradeRepository, SectionRepository
 from app.repositories.promotion_repo import PromotionRuleRepository
+from app.repositories.student_enrollment_repo import StudentEnrollmentRepository
 from app.repositories.student_repo import StudentProfileRepository
 from app.schemas.promotion import PromotionExecute, PromotionRuleCreate, PromotionRuleUpdate
 
@@ -17,6 +20,7 @@ class PromotionService:
         self.classes = ClassGradeRepository(db)
         self.sections = SectionRepository(db)
         self.students = StudentProfileRepository(db)
+        self.enrollments = StudentEnrollmentRepository(db)
 
     def _class_names(self, tenant_id: uuid.UUID) -> dict[uuid.UUID, str]:
         return {c.id: c.name for c in self.classes.list(tenant_id)}
@@ -92,12 +96,32 @@ class PromotionService:
             profile, _ = found
             if profile.class_grade_id != payload.source_class_id:
                 continue  # only students actually in the source class
+            today = date.today()
+            # Close the current active enrollment
+            current_enr = self.enrollments.get_active(profile.tenant_id, profile.id)
+            if current_enr is not None:
+                current_enr.status = "previous"
+                current_enr.left_at = today
             if payload.target_class_id:
                 profile.class_grade_id = payload.target_class_id
                 profile.section_id = None
+                # Record new active enrollment in the target class
+                target_cls = self.classes.get_by_id(profile.tenant_id, payload.target_class_id)
+                self.db.add(StudentEnrollment(
+                    tenant_id=profile.tenant_id,
+                    student_id=profile.id,
+                    class_grade_id=payload.target_class_id,
+                    section_id=None,
+                    academic_year_id=target_cls.academic_year_id if target_cls else None,
+                    enrolled_at=today,
+                    status="active",
+                    notes="Promotion",
+                ))
                 promoted += 1
             else:
                 profile.status = "withdrawn"  # graduated out of the school
+                if current_enr is not None:
+                    current_enr.status = "withdrawn"
                 graduated += 1
         self.db.commit()
         return {"promoted": promoted, "graduated": graduated}

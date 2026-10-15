@@ -115,6 +115,7 @@ from app.models.hifz import Halqa, HifzDailyRecord, HifzEnrolment  # noqa: F401
 from app.models.promotion import PromotionRule  # noqa: F401
 from app.models.recruitment import JobApplication, JobVacancy  # noqa: F401
 from app.models.holiday import Holiday  # noqa: F401
+from app.models.student_enrollment import StudentEnrollment  # noqa: F401
 
 __all__ = [
     "AutomationRule",
@@ -126,6 +127,7 @@ __all__ = [
     "JobApplication",
     "JobVacancy",
     "PromotionRule",
+    "StudentEnrollment",
     "Exam",
     "ExamClass",
     "ExamMark",

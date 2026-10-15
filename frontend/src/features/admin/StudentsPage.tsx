@@ -8,6 +8,7 @@ import {
   Button,
   Checkbox,
   Chip,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -22,12 +23,14 @@ import {
   Paper,
   Select,
   Stack,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   TextField,
   Tooltip,
   Typography,
@@ -44,8 +47,8 @@ import PrintIcon from "@mui/icons-material/Print";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import { AppShell } from "../../components/AppShell";
 import { adminNavItems } from "./adminNav";
-import { listClasses } from "../../api/classes";
-import { getStudent, listStudents, reactivateStudent, withdrawStudent, type Student } from "../../api/students";
+import { listClasses, listSections } from "../../api/classes";
+import { getStudent, listStudents, listStudentEnrollments, updateStudent, reactivateStudent, withdrawStudent, type Student, type StudentUpdatePayload } from "../../api/students";
 import { linkParent } from "../../api/parents";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -108,11 +111,13 @@ function TopBtn({
 function RowMenu({
   student,
   onView,
+  onEdit,
   onWithdraw,
   onReactivate,
 }: {
   student: Student;
   onView: () => void;
+  onEdit: () => void;
   onWithdraw: () => void;
   onReactivate: () => void;
 }) {
@@ -123,7 +128,8 @@ function RowMenu({
         <MoreVertIcon fontSize="small" />
       </IconButton>
       <Menu anchorEl={anchor} open={Boolean(anchor)} onClose={() => setAnchor(null)}>
-        <MenuItem onClick={() => { onView(); setAnchor(null); }}>View Details</MenuItem>
+        <MenuItem onClick={() => { onView(); setAnchor(null); }}>View Profile</MenuItem>
+        <MenuItem onClick={() => { onEdit(); setAnchor(null); }}>Edit Details</MenuItem>
         {student.status === "active" ? (
           <MenuItem onClick={() => { onWithdraw(); setAnchor(null); }} sx={{ color: "error.main" }}>Withdraw</MenuItem>
         ) : (
@@ -186,8 +192,14 @@ function LinkParentForm({ studentId }: { studentId: string }) {
 }
 
 function ViewStudentDialog({ student, onClose }: { student: Student | null; onClose: () => void }) {
+  const [tab, setTab] = useState(0);
   const detailQuery = useQuery({ queryKey: ["students", student?.id, "detail"], queryFn: () => getStudent(student!.id), enabled: !!student });
+  const enrollmentsQuery = useQuery({ queryKey: ["students", student?.id, "enrollments"], queryFn: () => listStudentEnrollments(student!.id), enabled: !!student && tab === 2 });
   const detail = detailQuery.data?.admission_detail;
+
+  // Reset tab when dialog closes/opens
+  const open = !!student;
+
   const rows: [string, string][] = student ? [
     ["Admission No.", student.admission_number ?? "—"],
     ["Full name", student.full_name],
@@ -207,23 +219,174 @@ function ViewStudentDialog({ student, onClose }: { student: Student | null; onCl
       ["Category", detail.category ?? "—"],
     ] as [string, string][]) : []),
   ] : [];
+
   return (
-    <Dialog open={!!student} onClose={onClose} fullWidth maxWidth="xs">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>Student Details</DialogTitle>
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 3, borderBottom: 1, borderColor: "divider" }}>
+        <Tab label="Profile" />
+        <Tab label="Link Parent" />
+        <Tab label="Enrollment History" />
+      </Tabs>
       <DialogContent>
-        {detailQuery.isLoading && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Loading…</Typography>}
-        <Stack divider={<Divider />} spacing={1}>
-          {rows.map(([label, value]) => (
-            <Stack key={label} direction="row" sx={{ justifyContent: "space-between", py: 0.5 }}>
-              <Typography variant="body2" color="text.secondary">{label}</Typography>
-              <Typography variant="body2" sx={{ fontWeight: 600, textAlign: "right" }}>{value}</Typography>
+        {tab === 0 && (
+          <>
+            {detailQuery.isLoading && <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Loading…</Typography>}
+            <Stack divider={<Divider />} spacing={1}>
+              {rows.map(([label, value]) => (
+                <Stack key={label} direction="row" sx={{ justifyContent: "space-between", py: 0.5 }}>
+                  <Typography variant="body2" color="text.secondary">{label}</Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 600, textAlign: "right" }}>{value}</Typography>
+                </Stack>
+              ))}
             </Stack>
-          ))}
-        </Stack>
-        {student && <><Divider sx={{ my: 2 }} /><LinkParentForm studentId={student.id} /></>}
+          </>
+        )}
+        {tab === 1 && student && <Box sx={{ pt: 1 }}><LinkParentForm studentId={student.id} /></Box>}
+        {tab === 2 && (
+          <Box sx={{ pt: 1 }}>
+            {enrollmentsQuery.isLoading && <CircularProgress size={20} />}
+            {!enrollmentsQuery.isLoading && (!enrollmentsQuery.data || enrollmentsQuery.data.length === 0) && (
+              <Typography variant="body2" color="text.secondary">No enrollment history yet.</Typography>
+            )}
+            {enrollmentsQuery.data && enrollmentsQuery.data.length > 0 && (
+              <Stack spacing={1}>
+                {enrollmentsQuery.data.map((enr) => (
+                  <Paper key={enr.id} variant="outlined" sx={{ p: 1.5, borderRadius: 1 }}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>Enrolled: {enr.enrolled_at}</Typography>
+                        {enr.left_at && <Typography variant="caption" color="text.secondary">Left: {enr.left_at}</Typography>}
+                        {enr.notes && <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>{enr.notes}</Typography>}
+                      </Box>
+                      <Chip size="small" label={enr.status} color={enr.status === "active" ? "success" : "default"} sx={{ fontSize: 11 }} />
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
+          </Box>
+        )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function EditStudentDialog({ student, classMap, onClose }: { student: Student | null; classMap: Record<string, string>; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const detailQuery = useQuery({ queryKey: ["students", student?.id, "detail"], queryFn: () => getStudent(student!.id), enabled: !!student });
+  const s = detailQuery.data ?? student;
+  const detail = detailQuery.data?.admission_detail;
+
+  const classesQuery = useQuery({ queryKey: ["classes"], queryFn: listClasses });
+  const [selectedClassId, setSelectedClassId] = useState(student?.class_grade_id ?? "");
+  const sectionsQuery = useQuery({ queryKey: ["sections", selectedClassId], queryFn: () => listSections(selectedClassId), enabled: !!selectedClassId });
+
+  const [form, setForm] = useState<StudentUpdatePayload>({});
+  const [detailForm, setDetailForm] = useState<Record<string, string>>({});
+  const [error, setError] = useState("");
+
+  // Populate form when data loads
+  const populated = !!s && !detailQuery.isLoading;
+
+  function set(field: keyof StudentUpdatePayload, value: string | null) {
+    setForm((prev) => ({ ...prev, [field]: value || undefined }));
+  }
+  function setDet(field: string, value: string) {
+    setDetailForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  const save = useMutation({
+    mutationFn: () => {
+      const payload: StudentUpdatePayload = { ...form };
+      if (Object.keys(detailForm).length > 0) payload.admission_detail = detailForm;
+      return updateStudent(student!.id, payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      onClose();
+    },
+    onError: (e: any) => setError(e?.response?.data?.detail || "Save failed."),
+  });
+
+  if (!student) return null;
+
+  return (
+    <Dialog open={!!student} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Edit Student — {student.full_name}</DialogTitle>
+      <DialogContent>
+        {detailQuery.isLoading && <Typography variant="body2" color="text.secondary">Loading…</Typography>}
+        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {populated && (
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: "uppercase", fontSize: 11, letterSpacing: 0.6 }}>Personal</Typography>
+            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 2 }}>
+              <TextField size="small" label="Full Name" defaultValue={s.full_name} onChange={(e) => set("full_name", e.target.value)} sx={{ minWidth: 200 }} />
+              <TextField size="small" label="Roll Number" defaultValue={s.roll_number ?? ""} onChange={(e) => set("roll_number", e.target.value)} sx={{ minWidth: 120 }} />
+              <TextField size="small" label="Guardian Name" defaultValue={s.guardian_name ?? ""} onChange={(e) => set("guardian_name", e.target.value)} sx={{ minWidth: 180 }} />
+              <TextField size="small" label="Date of Birth" type="date" defaultValue={s.date_of_birth ?? ""} onChange={(e) => set("date_of_birth", e.target.value)} sx={{ minWidth: 160 }} slotProps={{ inputLabel: { shrink: true } }} />
+              <TextField size="small" label="Admission Date" type="date" defaultValue={s.admission_date ?? ""} onChange={(e) => set("admission_date", e.target.value)} sx={{ minWidth: 160 }} slotProps={{ inputLabel: { shrink: true } }} />
+            </Stack>
+
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: "uppercase", fontSize: 11, letterSpacing: 0.6 }}>Class & Section</Typography>
+            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 2 }}>
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>Class</InputLabel>
+                <Select
+                  label="Class"
+                  defaultValue={s.class_grade_id ?? ""}
+                  onChange={(e) => { setSelectedClassId(e.target.value); set("class_grade_id", e.target.value); set("section_id", null); }}
+                >
+                  {classesQuery.data?.map((c) => <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 140 }} disabled={!selectedClassId}>
+                <InputLabel>Section</InputLabel>
+                <Select
+                  label="Section"
+                  defaultValue={s.section_id ?? ""}
+                  onChange={(e) => set("section_id", e.target.value)}
+                >
+                  <MenuItem value="">— None —</MenuItem>
+                  {sectionsQuery.data?.map((sec) => <MenuItem key={sec.id} value={sec.id}>{sec.name}</MenuItem>)}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: "uppercase", fontSize: 11, letterSpacing: 0.6 }}>Guardian Details</Typography>
+            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 2 }}>
+              <TextField size="small" label="Father Name" defaultValue={detail?.father_name ?? ""} onChange={(e) => setDet("father_name", e.target.value)} sx={{ minWidth: 180 }} />
+              <TextField size="small" label="Father Mobile" defaultValue={detail?.father_mobile ?? ""} onChange={(e) => setDet("father_mobile", e.target.value)} sx={{ minWidth: 150 }} />
+              <TextField size="small" label="WhatsApp" defaultValue={detail?.whatsapp_number ?? ""} onChange={(e) => setDet("whatsapp_number", e.target.value)} sx={{ minWidth: 150 }} />
+              <TextField size="small" label="Mother Name" defaultValue={detail?.mother_name ?? ""} onChange={(e) => setDet("mother_name", e.target.value)} sx={{ minWidth: 180 }} />
+              <TextField size="small" label="Mother Mobile" defaultValue={detail?.mother_mobile ?? ""} onChange={(e) => setDet("mother_mobile", e.target.value)} sx={{ minWidth: 150 }} />
+            </Stack>
+
+            <Divider />
+            <Typography variant="subtitle2" color="text.secondary" sx={{ textTransform: "uppercase", fontSize: 11, letterSpacing: 0.6 }}>Additional Info</Typography>
+            <Stack direction="row" spacing={2} sx={{ flexWrap: "wrap", gap: 2 }}>
+              <TextField size="small" label="Gender" defaultValue={detail?.gender ?? ""} onChange={(e) => setDet("gender", e.target.value)} sx={{ minWidth: 120 }} />
+              <TextField size="small" label="Blood Group" defaultValue={detail?.blood_group ?? ""} onChange={(e) => setDet("blood_group", e.target.value)} sx={{ minWidth: 120 }} />
+              <TextField size="small" label="Category" defaultValue={detail?.category ?? ""} onChange={(e) => setDet("category", e.target.value)} sx={{ minWidth: 140 }} />
+              <TextField size="small" label="Religion" defaultValue={detail?.religion ?? ""} onChange={(e) => setDet("religion", e.target.value)} sx={{ minWidth: 140 }} />
+              <TextField size="small" label="Nationality" defaultValue={detail?.nationality ?? ""} onChange={(e) => setDet("nationality", e.target.value)} sx={{ minWidth: 140 }} />
+              <TextField size="small" label="CNIC" defaultValue={detail?.student_cnic ?? ""} onChange={(e) => setDet("student_cnic", e.target.value)} sx={{ minWidth: 160 }} />
+              <TextField size="small" label="Address" defaultValue={detail?.current_address ?? ""} onChange={(e) => setDet("current_address", e.target.value)} sx={{ minWidth: 260 }} multiline />
+              <TextField size="small" label="Previous School" defaultValue={detail?.previous_school ?? ""} onChange={(e) => setDet("previous_school", e.target.value)} sx={{ minWidth: 220 }} />
+            </Stack>
+          </Stack>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={() => save.mutate()} disabled={save.isPending || detailQuery.isLoading}>
+          {save.isPending ? "Saving…" : "Save Changes"}
+        </Button>
       </DialogActions>
     </Dialog>
   );
@@ -241,15 +404,23 @@ export function StudentsPage() {
   const VALID: StatusTab[] = ["active", "old", "all"];
   const [statusTab, setStatusTab] = useState<StatusTab>(VALID.includes(initialStatus as StatusTab) ? (initialStatus as StatusTab) : "active");
   const [filterClassId, setFilterClassId] = useState("");
+  const [filterSectionId, setFilterSectionId] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [withdrawTarget, setWithdrawTarget] = useState<Student | null>(null);
   const [viewTarget, setViewTarget] = useState<Student | null>(null);
+  const [editTarget, setEditTarget] = useState<Student | null>(null);
+
+  const sectionsQuery = useQuery({
+    queryKey: ["sections", filterClassId],
+    queryFn: () => listSections(filterClassId),
+    enabled: !!filterClassId,
+  });
 
   const studentsQuery = useQuery({
-    queryKey: ["students", filterClassId, statusTab, appliedSearch],
-    queryFn: () => listStudents({ classGradeId: filterClassId || undefined, status: statusTab, query: appliedSearch || undefined }),
+    queryKey: ["students", filterClassId, filterSectionId, statusTab, appliedSearch],
+    queryFn: () => listStudents({ classGradeId: filterClassId || undefined, sectionId: filterSectionId || undefined, status: statusTab, query: appliedSearch || undefined }),
   });
 
   const reactivate = useMutation({
@@ -286,7 +457,11 @@ export function StudentsPage() {
         <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", gap: 1 }}>
           <TopBtn active={statusTab === "active"} label="Students" icon={<PersonAddIcon fontSize="small" />} onClick={() => { setStatusTab("active"); setSearchParams({ status: "active" }); }} />
           <TopBtn label="Edit Bulk Students" icon={<EditIcon fontSize="small" />} to="/admin/students/register" />
-          <TopBtn label="Send SMS" icon={<SmsIcon fontSize="small" />} onClick={() => {}} />
+          <Tooltip title="Bulk SMS — coming soon">
+            <span>
+              <TopBtn label="Send SMS" icon={<SmsIcon fontSize="small" />} onClick={() => {}} />
+            </span>
+          </Tooltip>
           <TopBtn label="Update Data (Via File)" icon={<UploadFileIcon fontSize="small" />} to="/admin/students/import" />
         </Stack>
       </Paper>
@@ -298,15 +473,31 @@ export function StudentsPage() {
         </Typography>
 
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center", mb: 1.5 }}>
-          {/* Search type dropdown */}
-          <FormControl size="small" sx={{ minWidth: 180 }}>
-            <Select value={filterClassId} onChange={(e) => setFilterClassId(e.target.value)} displayEmpty>
-              <MenuItem value="">Default Search</MenuItem>
+          {/* Class filter */}
+          <FormControl size="small" sx={{ minWidth: 160 }}>
+            <Select
+              value={filterClassId}
+              onChange={(e) => { setFilterClassId(e.target.value); setFilterSectionId(""); }}
+              displayEmpty
+            >
+              <MenuItem value="">All Classes</MenuItem>
               {classesQuery.data?.map((c) => (
                 <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
               ))}
             </Select>
           </FormControl>
+
+          {/* Section filter — only visible when a class is selected */}
+          {filterClassId && (
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <Select value={filterSectionId} onChange={(e) => setFilterSectionId(e.target.value)} displayEmpty>
+                <MenuItem value="">All Sections</MenuItem>
+                {sectionsQuery.data?.map((sec) => (
+                  <MenuItem key={sec.id} value={sec.id}>{sec.name}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {/* Search text */}
           <TextField
@@ -456,7 +647,7 @@ export function StudentsPage() {
                     </TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="flex-end">
-                        {/* Print button — yellow */}
+                        {/* ID Card button — yellow */}
                         <Button
                           size="small"
                           startIcon={<PrintIcon sx={{ fontSize: 14 }} />}
@@ -470,23 +661,27 @@ export function StudentsPage() {
                             borderRadius: 1,
                             "&:hover": { bgcolor: "#d97706" },
                           }}
-                          onClick={() => window.print()}
+                          component="a"
+                          href={`/api/v1/students/${s.id}/id-card`}
+                          target="_blank"
+                          rel="noreferrer"
                         >
-                          Print
+                          ID Card
                         </Button>
                         <Tooltip title="Email student">
                           <IconButton size="small" href={`mailto:${s.email}`}>
                             <EmailIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="View / Edit">
-                          <IconButton size="small" onClick={() => setViewTarget(s)}>
+                        <Tooltip title="Edit student">
+                          <IconButton size="small" onClick={() => setEditTarget(s)}>
                             <EditIcon sx={{ fontSize: 16 }} />
                           </IconButton>
                         </Tooltip>
                         <RowMenu
                           student={s}
                           onView={() => setViewTarget(s)}
+                          onEdit={() => setEditTarget(s)}
                           onWithdraw={() => setWithdrawTarget(s)}
                           onReactivate={() => reactivate.mutate(s.id)}
                         />
@@ -502,6 +697,7 @@ export function StudentsPage() {
 
       <WithdrawDialog student={withdrawTarget} onClose={() => setWithdrawTarget(null)} />
       <ViewStudentDialog student={viewTarget} onClose={() => setViewTarget(null)} />
+      <EditStudentDialog student={editTarget} classMap={classMap} onClose={() => setEditTarget(null)} />
     </AppShell>
   );
 }

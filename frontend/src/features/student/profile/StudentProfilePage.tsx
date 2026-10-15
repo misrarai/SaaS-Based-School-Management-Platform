@@ -23,6 +23,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { AppShell } from "../../../components/AppShell";
 import { studentNavItems } from "../studentNav";
 import { getMyStudentProfile } from "../../../api/students";
+import { listClasses } from "../../../api/classes";
 import { changePassword } from "../../../api/auth";
 import { useAuth } from "../../../auth/AuthContext";
 
@@ -46,6 +47,9 @@ export function StudentProfilePage() {
     queryKey: ["student-me-profile"],
     queryFn: getMyStudentProfile,
   });
+
+  const classesQuery = useQuery({ queryKey: ["classes"], queryFn: listClasses });
+  const classMap = Object.fromEntries((classesQuery.data ?? []).map((c) => [c.id, c.name]));
 
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -98,8 +102,8 @@ export function StudentProfilePage() {
                   {s?.admission_number && (
                     <Chip size="small" label={`#${s.admission_number}`} variant="outlined" />
                   )}
-                  {s?.class_grade_id && (
-                    <Chip size="small" label="Student" icon={<SchoolIcon />} variant="outlined" />
+                  {s?.class_grade_id && classMap[s.class_grade_id] && (
+                    <Chip size="small" label={classMap[s.class_grade_id]} icon={<SchoolIcon />} variant="outlined" />
                   )}
                 </Stack>
               </Box>

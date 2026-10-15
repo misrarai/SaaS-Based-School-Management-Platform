@@ -7,14 +7,17 @@ from app.core.exceptions import ConflictError, NotFoundError
 from app.core.security import hash_password
 from app.models.family import Family
 from app.models.student_admission_detail import StudentAdmissionDetail
+from app.models.student_enrollment import StudentEnrollment
 from app.models.user import RoleEnum, StudentProfile, User
 from app.repositories.academic_repo import ClassGradeRepository, SectionRepository
 from app.repositories.family_repo import FamilyRepository
 from app.repositories.student_admission_repo import StudentAdmissionDetailRepository
+from app.repositories.student_enrollment_repo import StudentEnrollmentRepository
 from app.repositories.student_repo import StudentProfileRepository
 from app.repositories.user_repo import UserRepository
 from app.schemas.student import StudentCreate, StudentOut, StudentUpdate
 from app.schemas.student_admission_detail import StudentAdmissionDetailOut
+from app.schemas.student_enrollment import StudentEnrollmentOut
 
 
 def _to_student_out(profile: StudentProfile, user: User, detail: StudentAdmissionDetail | None) -> StudentOut:
@@ -48,6 +51,7 @@ class StudentService:
         self.sections = SectionRepository(db)
         self.families = FamilyRepository(db)
         self.admission_details = StudentAdmissionDetailRepository(db)
+        self.enrollments = StudentEnrollmentRepository(db)
 
     def validate_class_and_section(
         self, tenant_id: uuid.UUID, class_grade_id: uuid.UUID, section_id: uuid.UUID | None
@@ -144,12 +148,47 @@ class StudentService:
 
                 FeeService(self.db).apply_referral_credit(tenant_id, detail.referred_by_family_id)
 
+        self._record_enrollment(
+            tenant_id,
+            profile,
+            class_grade_id=payload.class_grade_id,
+            section_id=payload.section_id,
+            enrolled_at=payload.admission_date or date.today(),
+            status="active",
+        )
+
         self.db.commit()
         self.db.refresh(user)
         self.db.refresh(profile)
         if detail is not None:
             self.db.refresh(detail)
         return _to_student_out(profile, user, detail)
+
+    def _record_enrollment(
+        self,
+        tenant_id: uuid.UUID,
+        profile: StudentProfile,
+        class_grade_id: uuid.UUID,
+        section_id: uuid.UUID | None,
+        enrolled_at: date,
+        status: str = "active",
+        notes: str | None = None,
+    ) -> StudentEnrollment:
+        # Resolve academic_year_id from the class if available
+        cls = self.class_grades.get_by_id(tenant_id, class_grade_id)
+        academic_year_id = cls.academic_year_id if cls else None
+
+        record = StudentEnrollment(
+            tenant_id=tenant_id,
+            student_id=profile.id,
+            class_grade_id=class_grade_id,
+            section_id=section_id,
+            academic_year_id=academic_year_id,
+            enrolled_at=enrolled_at,
+            status=status,
+            notes=notes,
+        )
+        return self.enrollments.create(record)
 
     def get_students_by_ids(self, tenant_id: uuid.UUID, student_ids: list[uuid.UUID]) -> list[StudentOut]:
         results = []
@@ -200,11 +239,30 @@ class StudentService:
 
         new_class_grade_id = payload.class_grade_id if payload.class_grade_id is not None else profile.class_grade_id
         new_section_id = payload.section_id if payload.section_id is not None else profile.section_id
+        class_changed = (
+            payload.class_grade_id is not None
+            and payload.class_grade_id != profile.class_grade_id
+        )
         if payload.class_grade_id is not None or payload.section_id is not None:
             if new_class_grade_id is not None:
                 self.validate_class_and_section(tenant_id, new_class_grade_id, new_section_id)
+            if class_changed:
+                # Close the current active enrollment before changing class
+                current_enr = self.enrollments.get_active(tenant_id, profile.id)
+                if current_enr is not None:
+                    current_enr.status = "previous"
+                    current_enr.left_at = date.today()
             profile.class_grade_id = new_class_grade_id
             profile.section_id = new_section_id
+            if class_changed and new_class_grade_id is not None:
+                self._record_enrollment(
+                    tenant_id, profile,
+                    class_grade_id=new_class_grade_id,
+                    section_id=new_section_id,
+                    enrolled_at=date.today(),
+                    status="active",
+                    notes="Class change",
+                )
 
         if payload.family_id is not None:
             self._validate_family(tenant_id, payload.family_id)
@@ -213,6 +271,12 @@ class StudentService:
             user.full_name = payload.full_name
         if payload.roll_number is not None:
             profile.roll_number = payload.roll_number
+        if payload.guardian_name is not None:
+            profile.guardian_name = payload.guardian_name
+        if payload.admission_date is not None:
+            profile.admission_date = payload.admission_date
+        if payload.date_of_birth is not None:
+            profile.date_of_birth = payload.date_of_birth
         if payload.status is not None:
             profile.status = payload.status
         if payload.is_active is not None:
@@ -245,16 +309,28 @@ class StudentService:
             raise NotFoundError("Student not found")
         profile, user = result
 
+        wd = withdrawal_date or date.today()
         profile.status = "withdrawn"
-        profile.withdrawal_date = withdrawal_date or date.today()
+        profile.withdrawal_date = wd
         profile.withdrawal_reason = reason
         user.is_active = False
         user.token_version += 1
+
+        current_enr = self.enrollments.get_active(tenant_id, profile.id)
+        if current_enr is not None:
+            current_enr.status = "withdrawn"
+            current_enr.left_at = wd
 
         self.db.commit()
         self.db.refresh(user)
         self.db.refresh(profile)
         return _to_student_out(profile, user, None)
+
+    def get_enrollment_history(self, tenant_id: uuid.UUID, student_id: uuid.UUID) -> list[StudentEnrollmentOut]:
+        if self.student_profiles.get_with_user(tenant_id, student_id) is None:
+            raise NotFoundError("Student not found")
+        records = self.enrollments.list_by_student(tenant_id, student_id)
+        return [StudentEnrollmentOut.model_validate(r) for r in records]
 
     def reactivate_student(self, tenant_id: uuid.UUID, student_id: uuid.UUID) -> StudentOut:
         result = self.student_profiles.get_with_user(tenant_id, student_id)
