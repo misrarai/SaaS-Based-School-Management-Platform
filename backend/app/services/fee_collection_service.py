@@ -136,6 +136,18 @@ class FeeCollectionService:
         tenant = self.db.get(Tenant, tenant_id)
         return tenant.name if tenant is not None else "School"
 
+    def _tenant_bank(self, tenant_id: uuid.UUID) -> dict:
+        tenant = self.db.get(Tenant, tenant_id)
+        if tenant is None:
+            return {}
+        return {
+            "bank_name": tenant.bank_name,
+            "bank_account_title": tenant.bank_account_title,
+            "bank_account_number": tenant.bank_account_number,
+            "bank_iban": tenant.bank_iban,
+            "bank_branch": tenant.bank_branch,
+        }
+
     def _class_name(self, tenant_id: uuid.UUID, class_grade_id: uuid.UUID | None) -> str | None:
         if class_grade_id is None:
             return None
@@ -601,6 +613,7 @@ class FeeCollectionService:
             "payable": round(balance + arrears, 2),
             "late_fee_after_due": late_after,
             "notes": inv.notes,
+            **self._tenant_bank(tenant_id),
         }
 
     def voucher_pdf(self, tenant_id: uuid.UUID, invoice_id: uuid.UUID) -> tuple[bytes, str]:

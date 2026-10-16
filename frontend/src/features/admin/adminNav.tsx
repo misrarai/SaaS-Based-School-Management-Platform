@@ -364,6 +364,7 @@ export const systemNav: NavItem[] = [
     icon: <SettingsIcon fontSize="small" />,
     children: [
       { label: "All Settings", to: "/admin/settings" },
+      { label: "School Profile & Bank", to: "/admin/settings/school" },
       { label: "Academic Years", to: "/admin/academic-years" },
       { label: "Student Promotion", to: "/admin/settings/promotion" },
       { label: "Automation", to: "/admin/settings/automation" },

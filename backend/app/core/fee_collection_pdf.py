@@ -116,6 +116,48 @@ def _draw_voucher_copy(c: canvas.Canvas, x: float, y_top: float, width: float, h
     if v.get("late_fee_after_due"):
         total_row(f"Payable after Due Date (+{_money(v['late_fee_after_due'])} fine)", v["payable"] + v["late_fee_after_due"], bold=True)
 
+    # Bank details box (shown when bank info available)
+    bank_name = v.get("bank_name") or ""
+    bank_acct = v.get("bank_account_number") or ""
+    bank_title = v.get("bank_account_title") or ""
+    bank_iban = v.get("bank_iban") or ""
+    bank_branch = v.get("bank_branch") or ""
+
+    if any([bank_name, bank_acct, bank_title]):
+        y -= 2 * mm
+        c.setFillColor(colors.Color(0.95, 0.98, 1.0))
+        box_h = 14 * mm
+        c.rect(left, y - box_h, inner, box_h, fill=1, stroke=0)
+        c.setStrokeColor(PRIMARY)
+        c.setLineWidth(0.8)
+        c.rect(left, y - box_h, inner, box_h, fill=0, stroke=1)
+        c.setFillColor(PRIMARY)
+        c.setFont("Helvetica-Bold", 7.5)
+        c.drawString(left + 2 * mm, y - 3.5 * mm, "PAY INTO BANK ACCOUNT")
+        c.setFillColor(colors.black)
+        c.setFont("Helvetica-Bold", 7)
+        bx = left + 2 * mm
+        by = y - 7 * mm
+        if bank_name:
+            c.drawString(bx, by, f"Bank:  {bank_name}")
+            by -= 3.8 * mm
+        if bank_title:
+            c.drawString(bx, by, f"Account Title:  {bank_title}")
+            by -= 3.8 * mm
+        if bank_acct:
+            c.setFont("Helvetica-Bold", 7)
+            c.drawString(bx, by, f"Account #:  {bank_acct}")
+        if bank_iban:
+            c.setFont("Helvetica", 7)
+            c.drawRightString(right - 2 * mm, y - 7 * mm, f"IBAN:  {bank_iban}")
+        if bank_branch:
+            c.setFont("Helvetica", 6.5)
+            c.drawRightString(right - 2 * mm, y - 10.5 * mm, f"Branch:  {bank_branch}")
+        y -= box_h + 2 * mm
+        c.setFillColor(colors.black)
+        c.setLineWidth(0.4)
+        c.setStrokeColor(colors.grey)
+
     # Footer
     c.setFont("Helvetica-Oblique", 7)
     c.setFillColor(colors.grey)

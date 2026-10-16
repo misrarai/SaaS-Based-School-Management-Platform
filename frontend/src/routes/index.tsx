@@ -118,6 +118,7 @@ import { ParentAssignmentsPage } from "../features/parent/assignments/ParentAssi
 import { AdminVideosPage } from "../features/admin/lms/AdminVideosPage";
 import { AdminBooksPage } from "../features/admin/lms/AdminBooksPage";
 import { AdminSettingsPage } from "../features/admin/settings/AdminSettingsPage";
+import { SchoolSettingsPage } from "../features/admin/settings/SchoolSettingsPage";
 import { EnquiriesPage } from "../features/admin/front-office/EnquiriesPage";
 import { VisitorsPage } from "../features/admin/front-office/VisitorsPage";
 import { ComplaintsPage } from "../features/admin/front-office/ComplaintsPage";
@@ -1344,6 +1345,7 @@ export function AppRoutes() {
       <Route path="/admin/pos/sale" element={<ProtectedRoute allowedRoles={["admin"]}><SaleTerminalPage /></ProtectedRoute>} />
       <Route path="/admin/pos/reports" element={<ProtectedRoute allowedRoles={["admin"]}><PosReportsPage /></ProtectedRoute>} />
       <Route path="/admin/settings/automation" element={<ProtectedRoute allowedRoles={["admin"]}><AutomationPage /></ProtectedRoute>} />
+      <Route path="/admin/settings/school" element={<ProtectedRoute allowedRoles={["admin"]}><SchoolSettingsPage /></ProtectedRoute>} />
       <Route path="/admin/hifz/halqas" element={<ProtectedRoute allowedRoles={["admin"]}><HalqasPage /></ProtectedRoute>} />
       <Route path="/admin/hifz/enrolments" element={<ProtectedRoute allowedRoles={["admin"]}><EnrolmentsPage /></ProtectedRoute>} />
       <Route path="/admin/settings/promotion" element={<ProtectedRoute allowedRoles={["admin"]}><PromotionPage /></ProtectedRoute>} />
