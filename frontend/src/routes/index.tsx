@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { NotFoundPage } from "../features/account/NotFoundPage";
+import { ProfilePage } from "../features/account/ProfilePage";
+import { ChangePasswordPage } from "../features/account/ChangePasswordPage";
 import { ProtectedRoute } from "../auth/ProtectedRoute";
 import { useAuth } from "../auth/AuthContext";
 import { LoginPage } from "../pages/LoginPage";
@@ -1324,6 +1326,10 @@ export function AppRoutes() {
       <Route path="/admin/fees/plans" element={<ProtectedRoute allowedRoles={["admin"]}><FeePlansPage /></ProtectedRoute>} />
       {/* /admin/fees/pending → PendingPaymentsPage */}
       <Route path="/admin/fees/pending" element={<ProtectedRoute allowedRoles={["admin"]}><PendingPaymentsPage /></ProtectedRoute>} />
+      {/* ── Account pages — accessible to every authenticated role ── */}
+      <Route path="/account/profile" element={<ProtectedRoute allowedRoles={["super_admin", "admin", "teacher", "student", "parent"]}><ProfilePage /></ProtectedRoute>} />
+      <Route path="/account/password" element={<ProtectedRoute allowedRoles={["super_admin", "admin", "teacher", "student", "parent"]}><ChangePasswordPage /></ProtectedRoute>} />
+
       <Route path="/" element={<HomeRedirect />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
