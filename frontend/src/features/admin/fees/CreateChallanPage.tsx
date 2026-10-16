@@ -21,7 +21,7 @@ import {
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { AppShell } from "../../../components/AppShell";
 import { adminNavItems } from "../adminNav";
 import { darkTableHeadSx } from "../../../components/tableStyles";
@@ -159,7 +159,7 @@ export function CreateChallanPage() {
       {result && (
         <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
           <Stack direction="row" spacing={2} alignItems="center" mb={2}>
-            <CheckCircleOutlineIcon color="success" />
+            <CheckCircleIcon color="success" />
             <Typography variant="h6">
               Challans Generated Successfully
             </Typography>
