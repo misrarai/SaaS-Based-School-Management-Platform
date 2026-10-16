@@ -172,6 +172,8 @@ import { StudentHomeworkPage } from "../features/student/homework/StudentHomewor
 import { StudentProfilePage } from "../features/student/profile/StudentProfilePage";
 import { StudentExamSchedulePage } from "../features/student/exams/StudentExamSchedulePage";
 import { QuizHistoryPage } from "../features/student/quizzes/QuizHistoryPage";
+import { MyFeesPage } from "../features/student/fees/MyFeesPage";
+import { MyMarksPage } from "../features/student/marks/MyMarksPage";
 import { AdminQuizBuilderPage } from "../features/admin/lms/AdminQuizBuilderPage";
 import { StudentAnalyticsPage } from "../features/admin/students/StudentAnalyticsPage";
 import { ParentDashboard } from "../features/parent/ParentDashboard";
@@ -1187,6 +1189,22 @@ export function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={["student"]}>
             <StudentExamSchedulePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/fees"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <MyFeesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/student/marks"
+        element={
+          <ProtectedRoute allowedRoles={["student"]}>
+            <MyMarksPage />
           </ProtectedRoute>
         }
       />

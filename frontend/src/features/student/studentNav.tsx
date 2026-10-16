@@ -11,6 +11,8 @@ import EditNoteIcon from "@mui/icons-material/EditNoteOutlined";
 import EventIcon from "@mui/icons-material/EventOutlined";
 import PersonIcon from "@mui/icons-material/PersonOutlined";
 import GradingIcon from "@mui/icons-material/GradingOutlined";
+import PaymentsIcon from "@mui/icons-material/PaymentsOutlined";
+import EmojiEventsIcon from "@mui/icons-material/EmojiEventsOutlined";
 import type { NavItem } from "../../components/AppShell";
 
 export const studentNavItems: NavItem[] = [
@@ -73,6 +75,16 @@ export const studentNavItems: NavItem[] = [
     label: "Exam Schedule",
     to: "/student/exams",
     icon: <EventIcon fontSize="small" />,
+  },
+  {
+    label: "My Results",
+    to: "/student/marks",
+    icon: <EmojiEventsIcon fontSize="small" />,
+  },
+  {
+    label: "My Fees",
+    to: "/student/fees",
+    icon: <PaymentsIcon fontSize="small" />,
   },
   {
     label: "My Profile",
