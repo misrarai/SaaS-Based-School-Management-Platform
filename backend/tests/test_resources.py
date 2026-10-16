@@ -1,6 +1,16 @@
 from tests.conftest import auth_headers, onboard_and_login_admin
 
 
+def create_academic_year(client, headers, name="2026"):
+    response = client.post(
+        "/api/v1/academic-years",
+        json={"name": name, "start_date": "2026-01-01", "end_date": "2026-12-31", "is_active": True},
+        headers=headers,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
 def create_class(client, headers, name="Grade 5", level_order=5):
     response = client.post(
         "/api/v1/classes",
@@ -11,9 +21,35 @@ def create_class(client, headers, name="Grade 5", level_order=5):
     return response.json()
 
 
+def create_class_with_year(client, headers, academic_year_id, name="Grade 5", level_order=5):
+    response = client.post(
+        "/api/v1/classes",
+        json={"name": name, "level_order": level_order, "academic_year_id": academic_year_id},
+        headers=headers,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
+def create_section(client, headers, class_id, name="A"):
+    response = client.post(f"/api/v1/classes/{class_id}/sections", json={"name": name}, headers=headers)
+    assert response.status_code == 201, response.text
+    return response.json()
+
+
 def create_subject(client, headers, class_id, name="Mathematics", code="MATH5"):
     response = client.post(f"/api/v1/classes/{class_id}/subjects", json={"name": name, "code": code}, headers=headers)
     assert response.status_code == 201
+    return response.json()
+
+
+def create_course(client, headers, academic_year_id, section_id, subject_id):
+    response = client.post(
+        "/api/v1/courses",
+        json={"academic_year_id": academic_year_id, "section_id": section_id, "subject_id": subject_id},
+        headers=headers,
+    )
+    assert response.status_code == 201, response.text
     return response.json()
 
 
@@ -41,6 +77,21 @@ def _login(client, email, password="Password123!"):
     resp = client.post("/api/v1/auth/login", json={"tenant_slug": "greenwood", "email": email, "password": password})
     assert resp.status_code == 200, resp.text
     return auth_headers(resp.json())
+
+
+def _make_teacher_with_course(client, headers, teacher_email="tom@greenwood.example.com"):
+    """Create the minimum infrastructure so a teacher can upload resources:
+    academic year → class → section → subject → course → teacher assignment.
+    Returns (teacher, class_grade_id, subject_id).
+    """
+    year = create_academic_year(client, headers)
+    class_grade = create_class_with_year(client, headers, year["id"])
+    section = create_section(client, headers, class_grade["id"])
+    subject = create_subject(client, headers, class_grade["id"])
+    course = create_course(client, headers, year["id"], section["id"], subject["id"])
+    teacher = create_teacher(client, headers, email=teacher_email)
+    client.post(f"/api/v1/courses/{course['id']}/teachers", json={"teacher_id": teacher["id"]}, headers=headers)
+    return teacher, class_grade["id"], subject["id"]
 
 
 def test_admin_creates_link_resource(client):
@@ -86,17 +137,63 @@ def test_document_resource_requires_file_url(client):
 
 
 def test_teacher_creates_document_resource(client):
+    """Teacher with an active assignment can upload a resource for that class+subject."""
     tokens = onboard_and_login_admin(client)
     headers = auth_headers(tokens)
-    create_teacher(client, headers)
-    teacher_headers = _login(client, "tom@greenwood.example.com")
+    teacher, class_grade_id, subject_id = _make_teacher_with_course(client, headers)
+    teacher_headers = _login(client, teacher["email"])
 
     response = client.post(
         "/api/v1/resources",
-        json={"title": "Past Paper 2023", "resource_type": "document", "file_url": "/static/uploads/fake.pdf", "category": "Past Papers"},
+        json={
+            "title": "Past Paper 2023",
+            "resource_type": "document",
+            "file_url": "/static/uploads/fake.pdf",
+            "category": "Past Papers",
+            "class_grade_id": class_grade_id,
+            "subject_id": subject_id,
+        },
         headers=teacher_headers,
     )
     assert response.status_code == 201, response.text
+
+
+def test_teacher_without_assignment_cannot_upload(client):
+    """Teacher not assigned to the class+subject gets 403."""
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    class_grade = create_class(client, headers)
+    subject = create_subject(client, headers, class_grade["id"])
+    teacher = create_teacher(client, headers)
+    teacher_headers = _login(client, teacher["email"])
+
+    response = client.post(
+        "/api/v1/resources",
+        json={
+            "title": "Sneaky resource",
+            "resource_type": "link",
+            "external_url": "https://example.com/sneaky",
+            "class_grade_id": class_grade["id"],
+            "subject_id": subject["id"],
+        },
+        headers=teacher_headers,
+    )
+    assert response.status_code == 403, response.text
+
+
+def test_teacher_must_specify_class_and_subject(client):
+    """Teacher omitting class_grade_id or subject_id gets 403 — not a bypass."""
+    tokens = onboard_and_login_admin(client)
+    headers = auth_headers(tokens)
+    teacher = create_teacher(client, headers)
+    teacher_headers = _login(client, teacher["email"])
+
+    response = client.post(
+        "/api/v1/resources",
+        json={"title": "No class", "resource_type": "link", "external_url": "https://example.com/a"},
+        headers=teacher_headers,
+    )
+    assert response.status_code == 403, response.text
 
 
 def test_student_sees_only_resources_for_their_class(client):
@@ -127,14 +224,21 @@ def test_student_sees_only_resources_for_their_class(client):
 def test_teacher_can_only_delete_own_upload(client):
     tokens = onboard_and_login_admin(client)
     headers = auth_headers(tokens)
-    create_teacher(client, headers, email="a@greenwood.example.com")
+    # Teacher A gets a course assignment so they can create a resource.
+    teacher_a, class_grade_id, subject_id = _make_teacher_with_course(client, headers, teacher_email="a@greenwood.example.com")
     create_teacher(client, headers, email="b@greenwood.example.com")
     a_headers = _login(client, "a@greenwood.example.com")
     b_headers = _login(client, "b@greenwood.example.com")
 
     created = client.post(
         "/api/v1/resources",
-        json={"title": "A's resource", "resource_type": "link", "external_url": "https://example.com/a"},
+        json={
+            "title": "A's resource",
+            "resource_type": "link",
+            "external_url": "https://example.com/a",
+            "class_grade_id": class_grade_id,
+            "subject_id": subject_id,
+        },
         headers=a_headers,
     ).json()
 
@@ -148,12 +252,18 @@ def test_teacher_can_only_delete_own_upload(client):
 def test_admin_can_delete_any_resource(client):
     tokens = onboard_and_login_admin(client)
     headers = auth_headers(tokens)
-    create_teacher(client, headers)
-    teacher_headers = _login(client, "tom@greenwood.example.com")
+    teacher, class_grade_id, subject_id = _make_teacher_with_course(client, headers)
+    teacher_headers = _login(client, teacher["email"])
 
     created = client.post(
         "/api/v1/resources",
-        json={"title": "Teacher's resource", "resource_type": "link", "external_url": "https://example.com/a"},
+        json={
+            "title": "Teacher's resource",
+            "resource_type": "link",
+            "external_url": "https://example.com/a",
+            "class_grade_id": class_grade_id,
+            "subject_id": subject_id,
+        },
         headers=teacher_headers,
     ).json()
 

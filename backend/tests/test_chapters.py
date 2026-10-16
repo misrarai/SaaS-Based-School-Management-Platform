@@ -149,6 +149,9 @@ def test_chapter_content_bundles_resources_and_quiz(client):
     teacher_headers = _login(client, teacher["email"])
     chapter = create_chapter(client, teacher_headers, course["id"], title="Chapter 1")
 
+    # Teachers must now supply class_grade_id + subject_id (assignment check).
+    class_grade_id = course["class_grade_id"]
+    subject_id = subject["id"]
     client.post(
         "/api/v1/resources",
         json={
@@ -156,17 +159,21 @@ def test_chapter_content_bundles_resources_and_quiz(client):
             "resource_type": "video",
             "external_url": "https://example.com/video.mp4",
             "chapter_id": chapter["id"],
+            "class_grade_id": class_grade_id,
+            "subject_id": subject_id,
         },
         headers=teacher_headers,
     )
     client.post(
         "/api/v1/resources",
-        json={"title": "Chapter notes", "resource_type": "notes", "file_url": "/static/uploads/notes.pdf", "chapter_id": chapter["id"]},
+        json={"title": "Chapter notes", "resource_type": "notes", "file_url": "/static/uploads/notes.pdf",
+              "chapter_id": chapter["id"], "class_grade_id": class_grade_id, "subject_id": subject_id},
         headers=teacher_headers,
     )
     client.post(
         "/api/v1/resources",
-        json={"title": "Worksheet 1", "resource_type": "worksheet", "file_url": "/static/uploads/ws1.pdf", "chapter_id": chapter["id"]},
+        json={"title": "Worksheet 1", "resource_type": "worksheet", "file_url": "/static/uploads/ws1.pdf",
+              "chapter_id": chapter["id"], "class_grade_id": class_grade_id, "subject_id": subject_id},
         headers=teacher_headers,
     )
     quiz_payload = {

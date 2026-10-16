@@ -6,7 +6,7 @@ from fastapi import UploadFile
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.exceptions import ConflictError, DomainError, NotFoundError
+from app.core.exceptions import ConflictError, DomainError, ForbiddenError, NotFoundError
 from app.models.fee import (
     FeePlan,
     Invoice,
@@ -503,6 +503,13 @@ class FeeService:
         if result.txn_ref_no is None:
             raise NotFoundError("Callback is missing a transaction reference")
 
+        # Verify the secure hash BEFORE touching the database.  A callback with
+        # an invalid hash must cause zero DB mutations — if we wrote FAILED here,
+        # anyone who learns a txn_ref_no could permanently kill a legitimate
+        # payment before the real JazzCash callback arrives (line 510 is idempotent).
+        if not result.hash_valid:
+            raise ForbiddenError("Secure hash verification failed")
+
         txn = self.gateway_transactions.get_by_txn_ref_no(result.txn_ref_no)
         if txn is None:
             raise NotFoundError("Unknown transaction reference")
@@ -514,13 +521,6 @@ class FeeService:
         txn.gateway_response_message = result.response_message
         txn.gateway_txn_id = result.retrieval_reference_no
         txn.completed_at = datetime.now(timezone.utc)
-
-        if not result.hash_valid:
-            txn.status = GatewayTransactionStatus.FAILED
-            txn.gateway_response_message = "Secure hash verification failed"
-            self.db.commit()
-            self.db.refresh(txn)
-            return txn
 
         if result.success:
             payment = self.payments.create(

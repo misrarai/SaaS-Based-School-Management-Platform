@@ -21,7 +21,12 @@ def create_resource(
     current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
     db: Session = Depends(get_db),
 ) -> ResourceOut:
-    return ResourceService(db).create_resource(current_user.tenant_id, current_user.id, payload)
+    return ResourceService(db).create_resource(
+        current_user.tenant_id,
+        current_user.id,
+        payload,
+        is_admin=current_user.role == RoleEnum.ADMIN,
+    )
 
 
 @router.get("", response_model=list[ResourceOut])

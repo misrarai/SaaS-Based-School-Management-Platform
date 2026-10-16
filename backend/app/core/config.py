@@ -1,17 +1,53 @@
 from functools import lru_cache
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_INSECURE_JWT_DEFAULT = "change-me-in-.env-this-is-not-a-secure-default"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    @model_validator(mode="after")
+    def _reject_insecure_production_config(self) -> "Settings":
+        """Refuse to start in production when the config is demonstrably insecure.
+
+        Gated on ENVIRONMENT == 'production' so local dev and the test suite
+        (conftest.py sets ENVIRONMENT=testing) are never affected.
+        """
+        if self.ENVIRONMENT != "production":
+            return self
+        errors: list[str] = []
+        if self.JWT_SECRET in (_INSECURE_JWT_DEFAULT, "") or len(self.JWT_SECRET) < 32:
+            errors.append(
+                "JWT_SECRET is the insecure default or fewer than 32 characters — "
+                "set a cryptographically random value in .env"
+            )
+        if self.DATABASE_URL.startswith("sqlite"):
+            errors.append(
+                "DATABASE_URL is SQLite — use a PostgreSQL URL in production"
+            )
+        localhost_origins = [o for o in self.CORS_ORIGINS if "localhost" in o or "127.0.0.1" in o]
+        if localhost_origins:
+            errors.append(
+                f"CORS_ORIGINS contains localhost entries {localhost_origins} — "
+                "remove them and list only your production domain(s)"
+            )
+        if errors:
+            bullet = "\n  • "
+            raise ValueError(
+                f"Production config is insecure — fix these before starting:{bullet}"
+                + bullet.join(errors)
+            )
+        return self
 
     APP_NAME: str = "Online Teaching Academy Management & Learning Platform"
     ENVIRONMENT: str = "development"
 
     DATABASE_URL: str = "sqlite:///./app.db"
 
-    JWT_SECRET: str = "change-me-in-.env-this-is-not-a-secure-default"
+    JWT_SECRET: str = _INSECURE_JWT_DEFAULT
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_EXPIRE_DAYS: int = 14
