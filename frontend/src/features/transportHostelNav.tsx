@@ -2,8 +2,6 @@ import DirectionsBusIcon from "@mui/icons-material/DirectionsBusOutlined";
 import HotelIcon from "@mui/icons-material/HotelOutlined";
 import type { NavItem } from "../components/AppShell";
 import { adminNavItems } from "./admin/adminNav";
-import { parentNavItems } from "./parent/parentNav";
-import { studentNavItems } from "./student/studentNav";
 
 export const transportAdminNav: NavItem = {
   label: "Transport",
@@ -26,24 +24,8 @@ export const hostelAdminNav: NavItem = {
   children: [
     { label: "Hostels & Rooms", to: "/admin/hostel" },
     { label: "Allocations", to: "/admin/hostel/allocations" },
-    { label: "Mess Menu", to: "/admin/hostel/mess-menu" },
-    { label: "Outpasses", to: "/admin/hostel/outpasses" },
-    { label: "Occupancy", to: "/admin/hostel/occupancy" },
   ],
 };
-
-export const transportParentNav: NavItem = {
-  label: "Transport",
-  to: "/parent/transport",
-  icon: <DirectionsBusIcon fontSize="small" />,
-};
-export const hostelParentNav: NavItem = { label: "Hostel", to: "/parent/hostel", icon: <HotelIcon fontSize="small" /> };
-export const transportStudentNav: NavItem = {
-  label: "Transport",
-  to: "/student/transport",
-  icon: <DirectionsBusIcon fontSize="small" />,
-};
-export const hostelStudentNav: NavItem = { label: "Hostel", to: "/student/hostel", icon: <HotelIcon fontSize="small" /> };
 
 /** Appends module nav groups to a role's base nav, skipping any already present (so the sidebar
  * stays correct whether or not the integrator has merged these groups into the role nav files). */
@@ -53,5 +35,3 @@ function merge(base: NavItem[], extra: NavItem[]): NavItem[] {
 }
 
 export const adminNavWithTransportHostel = () => merge(adminNavItems, [transportAdminNav, hostelAdminNav]);
-export const parentNavWithTransportHostel = () => merge(parentNavItems, [transportParentNav, hostelParentNav]);
-export const studentNavWithTransportHostel = () => merge(studentNavItems, [transportStudentNav, hostelStudentNav]);

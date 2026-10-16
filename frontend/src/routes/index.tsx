@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { NotFoundPage } from "../features/account/NotFoundPage";
 import { ProtectedRoute } from "../auth/ProtectedRoute";
 import { useAuth } from "../auth/AuthContext";
 import { LoginPage } from "../pages/LoginPage";
@@ -1317,20 +1318,14 @@ export function AppRoutes() {
       {/* ── Alias / redirect fixes for navbar paths ── */}
       {/* /admin/schedule/timetable → AdminTimetablePage */}
       <Route path="/admin/schedule/timetable" element={<ProtectedRoute allowedRoles={["admin"]}><AdminTimetablePage /></ProtectedRoute>} />
-      {/* /admin/lms/videos → VideoLecturesPage (existing page at /admin/lms/lectures) */}
-      <Route path="/admin/lms/videos" element={<ProtectedRoute allowedRoles={["admin"]}><VideoLecturesPage /></ProtectedRoute>} />
-      {/* /admin/lms/books → VideoLecturesPage filtered to document type */}
-      <Route path="/admin/lms/books" element={<ProtectedRoute allowedRoles={["admin"]}><VideoLecturesPage /></ProtectedRoute>} />
       {/* /admin/lms/quiz-results → AdminQuizzesPage */}
       <Route path="/admin/lms/quiz-results" element={<ProtectedRoute allowedRoles={["admin"]}><AdminQuizzesPage /></ProtectedRoute>} />
       {/* /admin/fees/plans → FeePlansPage */}
       <Route path="/admin/fees/plans" element={<ProtectedRoute allowedRoles={["admin"]}><FeePlansPage /></ProtectedRoute>} />
       {/* /admin/fees/pending → PendingPaymentsPage */}
       <Route path="/admin/fees/pending" element={<ProtectedRoute allowedRoles={["admin"]}><PendingPaymentsPage /></ProtectedRoute>} />
-      {/* /admin/settings → AutomationPage as settings landing */}
-      <Route path="/admin/settings" element={<ProtectedRoute allowedRoles={["admin"]}><AutomationPage /></ProtectedRoute>} />
-
       <Route path="/" element={<HomeRedirect />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
