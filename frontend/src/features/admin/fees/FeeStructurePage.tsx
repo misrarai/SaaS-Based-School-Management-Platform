@@ -36,10 +36,10 @@ import {
 } from "../../../api/feeCollection";
 
 const FREQ_LABELS: Record<FeeFrequency, string> = {
-  MONTHLY: "Monthly",
-  QUARTERLY: "Quarterly",
-  ANNUALLY: "Annually",
-  ONE_TIME: "One-Time",
+  monthly: "Monthly",
+  per_term: "Per Term",
+  annual: "Annually",
+  one_time: "One-Time",
 };
 
 interface RowState {
@@ -81,7 +81,7 @@ export function FeeStructurePage() {
           fee_head_id: h.id,
           fee_head_name: h.name,
           amount: ex ? String(ex.amount) : "",
-          frequency: ex ? ex.frequency : h.default_frequency,
+          frequency: ex ? ex.frequency : (h.default_frequency ?? "monthly"),
           enabled: !!ex,
         };
       })
@@ -113,7 +113,7 @@ export function FeeStructurePage() {
   };
 
   const monthlyTotal = rows
-    .filter((r) => r.enabled && r.frequency === "MONTHLY" && Number(r.amount) > 0)
+    .filter((r) => r.enabled && r.frequency === "monthly" && Number(r.amount) > 0)
     .reduce((s, r) => s + Number(r.amount), 0);
 
   const classes = classesQuery.data ?? [];

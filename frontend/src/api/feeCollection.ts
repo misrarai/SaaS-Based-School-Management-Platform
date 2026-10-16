@@ -2,7 +2,7 @@ import { apiClient } from "./client";
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
 
-export type FeeFrequency = "MONTHLY" | "QUARTERLY" | "ANNUALLY" | "ONE_TIME";
+export type FeeFrequency = "monthly" | "one_time" | "annual" | "per_term";
 export type ConcessionType = "PERCENTAGE" | "FIXED";
 export type PaymentMethod = "CASH" | "BANK" | "ONLINE" | "JAZZCASH" | "EASYPAISA";
 export type InvoiceStatus = "pending" | "partial" | "paid" | "overdue" | "cancelled";

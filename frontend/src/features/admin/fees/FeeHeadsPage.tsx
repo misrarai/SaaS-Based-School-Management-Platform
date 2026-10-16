@@ -45,13 +45,13 @@ import {
 } from "../../../api/feeCollection";
 
 const FREQ_LABELS: Record<FeeFrequency, string> = {
-  MONTHLY: "Monthly",
-  QUARTERLY: "Quarterly",
-  ANNUALLY: "Annual",
-  ONE_TIME: "One-Time",
+  monthly: "Monthly",
+  per_term: "Per Term",
+  annual: "Annual",
+  one_time: "One-Time",
 };
 
-const EMPTY = { name: "", code: "", default_frequency: "MONTHLY" as FeeFrequency, description: "" };
+const EMPTY = { name: "", code: "", default_frequency: "monthly" as FeeFrequency, description: "" };
 
 export function FeeHeadsPage() {
   const qc = useQueryClient();
