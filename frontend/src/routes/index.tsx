@@ -49,6 +49,7 @@ import { SendSMSPage as FeeSendSMSPage } from "../features/admin/fees/SendSMSPag
 import { FeeSettingPage } from "../features/admin/fees/FeeSettingPage";
 import { SecurityFeePage } from "../features/admin/fees/SecurityFeePage";
 import { FeeStructurePage } from "../features/admin/fees/FeeStructurePage";
+import { FeeHubPage } from "../features/admin/fees/FeeHubPage";
 import { PayoutRatesPage } from "../features/admin/payouts/PayoutRatesPage";
 import { PayoutsPage } from "../features/admin/payouts/PayoutsPage";
 import { NotificationsPage } from "../features/admin/notifications/NotificationsPage";
@@ -417,7 +418,7 @@ export function AppRoutes() {
         path="/admin/fees"
         element={
           <ProtectedRoute allowedRoles={["admin"]}>
-            <FeePlansPage />
+            <FeeHubPage />
           </ProtectedRoute>
         }
       />

@@ -187,9 +187,10 @@ export const financeNav: NavItem[] = [
   section("Finance"),
   {
     label: "Fee",
-    to: "/admin/fees/collect",
+    to: "/admin/fees",
     icon: <PaymentsIcon fontSize="small" />,
     children: [
+      { label: "Overview", to: "/admin/fees" },
       { label: "Collect Fee", to: "/admin/fees/collect" },
       { label: "Collect Family Fee", to: "/admin/fees/collect-family" },
       { label: "View Challan", to: "/admin/fees/challan" },
