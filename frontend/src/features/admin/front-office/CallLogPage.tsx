@@ -21,13 +21,15 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { darkTableHeadSx } from "../../../components/tableStyles";
-import { createCall, deleteCall, listCalls, type CallType } from "../../../api/frontOffice";
+import { createCall, deleteCall, listCalls, updateCall, type CallType, type PhoneCall } from "../../../api/frontOffice";
 import { FilterTabs, FrontOfficeShell, PageHeader, errorMessage, fmtDate, todayIso } from "./common";
 
 type Tab = "all" | CallType;
@@ -38,43 +40,68 @@ export function CallLogPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<PhoneCall | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState<string | null>(null);
 
   const calls = useQuery({ queryKey: ["fo-calls", tab, search], queryFn: () => listCalls({ type: tab, q: search }) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["fo-calls"] });
+
+  const buildPayload = () => ({
+    caller_name: form.caller_name,
+    phone: form.phone || null,
+    purpose: form.purpose,
+    call_date: form.call_date || undefined,
+    call_type: form.call_type,
+    follow_up_date: form.follow_up_date || null,
+    duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
+    notes: form.notes || null,
+  });
+
   const add = useMutation({
-    mutationFn: () =>
-      createCall({
-        caller_name: form.caller_name,
-        phone: form.phone || null,
-        purpose: form.purpose,
-        call_date: form.call_date || undefined,
-        call_type: form.call_type,
-        follow_up_date: form.follow_up_date || null,
-        duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
-        notes: form.notes || null,
-      }),
-    onSuccess: () => {
-      setOpen(false);
-      setForm(EMPTY);
-      setError(null);
-      invalidate();
-    },
+    mutationFn: () => createCall(buildPayload()),
+    onSuccess: () => { setOpen(false); setForm(EMPTY); setError(null); invalidate(); },
     onError: (e) => setError(errorMessage(e, "Could not save call.")),
   });
+
+  const edit = useMutation({
+    mutationFn: () => updateCall(editTarget!.id, buildPayload()),
+    onSuccess: () => { setEditTarget(null); setError(null); invalidate(); },
+    onError: (e) => setError(errorMessage(e, "Could not update call.")),
+  });
+
   const remove = useMutation({ mutationFn: (id: string) => deleteCall(id), onSuccess: invalidate });
   const set = (patch: Partial<typeof EMPTY>) => setForm((f) => ({ ...f, ...patch }));
+
+  function openAdd() {
+    setForm({ ...EMPTY, call_date: todayIso() });
+    setError(null);
+    setOpen(true);
+  }
+
+  function openEdit(c: PhoneCall) {
+    setForm({
+      caller_name: c.caller_name,
+      phone: c.phone ?? "",
+      purpose: c.purpose,
+      call_date: c.call_date,
+      call_type: c.call_type,
+      follow_up_date: c.follow_up_date ?? "",
+      duration_minutes: c.duration_minutes != null ? String(c.duration_minutes) : "",
+      notes: c.notes ?? "",
+    });
+    setError(null);
+    setEditTarget(c);
+  }
+
+  const isEditing = editTarget !== null;
+  const dialogOpen = open || isEditing;
 
   return (
     <FrontOfficeShell title="Phone Call Log">
       <PageHeader
         title="Phone Call Log"
-        action={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setForm({ ...EMPTY, call_date: todayIso() }); setOpen(true); }}>
-            Log call
-          </Button>
-        }
+        action={<Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Log call</Button>}
       />
       <FilterTabs<Tab> value={tab} onChange={setTab} options={[{ value: "all", label: "All" }, { value: "incoming", label: "Incoming" }, { value: "outgoing", label: "Outgoing" }]} />
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
@@ -117,8 +144,9 @@ export function CallLogPage() {
                   <TableCell>{c.duration_minutes != null ? `${c.duration_minutes} min` : "—"}</TableCell>
                   <TableCell>{fmtDate(c.follow_up_date)}</TableCell>
                   <TableCell>{c.notes ?? "—"}</TableCell>
-                  <TableCell align="right">
-                    <IconButton size="small" color="error" onClick={() => window.confirm("Delete this call?") && remove.mutate(c.id)}>
+                  <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                    <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(c)}><EditIcon fontSize="small" /></IconButton></Tooltip>
+                    <IconButton size="small" color="error" onClick={() => window.confirm("Delete this call log?") && remove.mutate(c.id)}>
                       <DeleteIcon fontSize="small" />
                     </IconButton>
                   </TableCell>
@@ -129,9 +157,9 @@ export function CallLogPage() {
         </TableContainer>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Log a phone call</DialogTitle>
-        <Box component="form" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
+      <Dialog open={dialogOpen} onClose={() => { setOpen(false); setEditTarget(null); setError(null); }} fullWidth maxWidth="sm">
+        <DialogTitle>{isEditing ? "Edit call log" : "Log a phone call"}</DialogTitle>
+        <Box component="form" onSubmit={(e) => { e.preventDefault(); isEditing ? edit.mutate() : add.mutate(); }}>
           <DialogContent>
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -155,8 +183,8 @@ export function CallLogPage() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={add.isPending}>Save</Button>
+            <Button onClick={() => { setOpen(false); setEditTarget(null); setError(null); }}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={add.isPending || edit.isPending}>Save</Button>
           </DialogActions>
         </Box>
       </Dialog>

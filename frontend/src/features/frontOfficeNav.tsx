@@ -14,6 +14,9 @@ export const frontOfficeAdminNav: NavItem[] = [
       { label: "Postal Register", to: "/admin/front-office/postal" },
       { label: "Gate Passes", to: "/admin/front-office/gate-passes" },
       { label: "Phone Call Log", to: "/admin/front-office/calls" },
+      { label: "Appointments", to: "/admin/front-office/appointments" },
+      { label: "Lost & Found", to: "/admin/front-office/lost-found" },
+      { label: "Reports", to: "/admin/front-office/reports" },
     ],
   },
 ];

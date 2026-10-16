@@ -22,17 +22,24 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import LogoutIcon from "@mui/icons-material/Logout";
 import { darkTableHeadSx } from "../../../components/tableStyles";
-import { checkOutVisitor, createVisitor, deleteVisitor, listVisitors } from "../../../api/frontOffice";
+import { checkOutVisitor, createVisitor, deleteVisitor, listVisitors, updateVisitor, type Visitor } from "../../../api/frontOffice";
 import { FrontOfficeShell, PageHeader, errorMessage, fmtDateTime, localInputToIso, todayIso } from "./common";
 
 const EMPTY = { visitor_name: "", phone: "", cnic: "", purpose: "", person_to_meet: "", number_of_persons: "1", in_time: "", notes: "" };
+
+function isoToLocalInput(iso: string | null | undefined) {
+  if (!iso) return "";
+  return iso.slice(0, 16);
+}
 
 export function VisitorsPage() {
   const queryClient = useQueryClient();
@@ -40,6 +47,7 @@ export function VisitorsPage() {
   const [insideOnly, setInsideOnly] = useState(false);
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<Visitor | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,39 +57,62 @@ export function VisitorsPage() {
   });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["fo-visitors"] });
 
+  const buildPayload = () => ({
+    visitor_name: form.visitor_name,
+    phone: form.phone || null,
+    cnic: form.cnic || null,
+    purpose: form.purpose,
+    person_to_meet: form.person_to_meet || null,
+    number_of_persons: Number(form.number_of_persons) || 1,
+    in_time: localInputToIso(form.in_time),
+    notes: form.notes || null,
+  });
+
   const add = useMutation({
-    mutationFn: () =>
-      createVisitor({
-        visitor_name: form.visitor_name,
-        phone: form.phone || null,
-        cnic: form.cnic || null,
-        purpose: form.purpose,
-        person_to_meet: form.person_to_meet || null,
-        number_of_persons: Number(form.number_of_persons) || 1,
-        in_time: localInputToIso(form.in_time),
-        notes: form.notes || null,
-      }),
-    onSuccess: () => {
-      setOpen(false);
-      setForm(EMPTY);
-      setError(null);
-      invalidate();
-    },
+    mutationFn: () => createVisitor(buildPayload()),
+    onSuccess: () => { setOpen(false); setForm(EMPTY); setError(null); invalidate(); },
     onError: (e) => setError(errorMessage(e, "Could not add visitor.")),
   });
+
+  const edit = useMutation({
+    mutationFn: () => updateVisitor(editTarget!.id, buildPayload()),
+    onSuccess: () => { setEditTarget(null); setError(null); invalidate(); },
+    onError: (e) => setError(errorMessage(e, "Could not update visitor.")),
+  });
+
   const checkOut = useMutation({ mutationFn: (id: string) => checkOutVisitor(id), onSuccess: invalidate });
   const remove = useMutation({ mutationFn: (id: string) => deleteVisitor(id), onSuccess: invalidate });
   const set = (patch: Partial<typeof EMPTY>) => setForm((f) => ({ ...f, ...patch }));
+
+  function openAdd() {
+    setForm(EMPTY);
+    setError(null);
+    setOpen(true);
+  }
+
+  function openEdit(v: Visitor) {
+    setForm({
+      visitor_name: v.visitor_name,
+      phone: v.phone ?? "",
+      cnic: v.cnic ?? "",
+      purpose: v.purpose,
+      person_to_meet: v.person_to_meet ?? "",
+      number_of_persons: String(v.number_of_persons),
+      in_time: isoToLocalInput(v.in_time),
+      notes: v.notes ?? "",
+    });
+    setError(null);
+    setEditTarget(v);
+  }
+
+  const isEditing = editTarget !== null;
+  const dialogOpen = open || isEditing;
 
   return (
     <FrontOfficeShell title="Visitor Book">
       <PageHeader
         title="Visitor Book"
-        action={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpen(true)}>
-            Check in visitor
-          </Button>
-        }
+        action={<Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Check in visitor</Button>}
       />
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
@@ -128,6 +159,7 @@ export function VisitorsPage() {
                   <TableCell>{fmtDateTime(v.in_time)}</TableCell>
                   <TableCell>{v.out_time ? fmtDateTime(v.out_time) : <Chip size="small" color="warning" label="Inside" />}</TableCell>
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                    <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(v)}><EditIcon fontSize="small" /></IconButton></Tooltip>
                     {!v.out_time && (
                       <Button size="small" startIcon={<LogoutIcon fontSize="small" />} onClick={() => checkOut.mutate(v.id)}>
                         Check out
@@ -144,9 +176,9 @@ export function VisitorsPage() {
         </TableContainer>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Check in a visitor</DialogTitle>
-        <Box component="form" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
+      <Dialog open={dialogOpen} onClose={() => { setOpen(false); setEditTarget(null); setError(null); }} fullWidth maxWidth="sm">
+        <DialogTitle>{isEditing ? "Edit visitor entry" : "Check in a visitor"}</DialogTitle>
+        <Box component="form" onSubmit={(e) => { e.preventDefault(); isEditing ? edit.mutate() : add.mutate(); }}>
           <DialogContent>
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -167,8 +199,8 @@ export function VisitorsPage() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={add.isPending}>Check in</Button>
+            <Button onClick={() => { setOpen(false); setEditTarget(null); setError(null); }}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={add.isPending || edit.isPending}>{isEditing ? "Save" : "Check in"}</Button>
           </DialogActions>
         </Box>
       </Dialog>

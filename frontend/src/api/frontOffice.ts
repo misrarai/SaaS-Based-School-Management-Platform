@@ -139,6 +139,9 @@ export function listVisitors(params?: { date?: string; q?: string; inside_only?:
 export function createVisitor(payload: VisitorPayload) {
   return apiClient.post<Visitor>(`${BASE}/visitors`, payload).then((r) => r.data);
 }
+export function updateVisitor(id: string, payload: VisitorPayload) {
+  return apiClient.patch<Visitor>(`${BASE}/visitors/${id}`, payload).then((r) => r.data);
+}
 export function checkOutVisitor(id: string) {
   return apiClient.post<Visitor>(`${BASE}/visitors/${id}/check-out`, {}).then((r) => r.data);
 }
@@ -199,6 +202,9 @@ export function listPostal(params?: { type?: string; q?: string }) {
 }
 export function createPostal(payload: PostalPayload) {
   return apiClient.post<PostalRecord>(`${BASE}/postal`, payload).then((r) => r.data);
+}
+export function updatePostal(id: string, payload: PostalPayload) {
+  return apiClient.patch<PostalRecord>(`${BASE}/postal/${id}`, payload).then((r) => r.data);
 }
 export function deletePostal(id: string) {
   return apiClient.delete(`${BASE}/postal/${id}`);
@@ -284,6 +290,9 @@ export function listCalls(params?: { type?: string; q?: string }) {
 }
 export function createCall(payload: PhoneCallPayload) {
   return apiClient.post<PhoneCall>(`${BASE}/calls`, payload).then((r) => r.data);
+}
+export function updateCall(id: string, payload: PhoneCallPayload) {
+  return apiClient.patch<PhoneCall>(`${BASE}/calls/${id}`, payload).then((r) => r.data);
 }
 export function deleteCall(id: string) {
   return apiClient.delete(`${BASE}/calls/${id}`);

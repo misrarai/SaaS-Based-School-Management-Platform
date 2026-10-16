@@ -21,13 +21,15 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import EditIcon from "@mui/icons-material/EditOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { darkTableHeadSx } from "../../../components/tableStyles";
-import { createPostal, deletePostal, listPostal, type PostalType } from "../../../api/frontOffice";
+import { createPostal, deletePostal, listPostal, updatePostal, type PostalRecord, type PostalType } from "../../../api/frontOffice";
 import { FilterTabs, FrontOfficeShell, PageHeader, errorMessage, fmtDate, todayIso } from "./common";
 
 type Tab = "all" | PostalType;
@@ -38,11 +40,13 @@ export function PostalPage() {
   const [tab, setTab] = useState<Tab>("all");
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<PostalRecord | null>(null);
   const [form, setForm] = useState(EMPTY);
   const [error, setError] = useState<string | null>(null);
 
   const records = useQuery({ queryKey: ["fo-postal", tab, search], queryFn: () => listPostal({ type: tab, q: search }) });
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["fo-postal"] });
+
   const add = useMutation({
     mutationFn: () =>
       createPostal({
@@ -54,26 +58,48 @@ export function PostalPage() {
         record_date: form.record_date || undefined,
         notes: form.notes || null,
       }),
-    onSuccess: () => {
-      setOpen(false);
-      setForm(EMPTY);
-      setError(null);
-      invalidate();
-    },
+    onSuccess: () => { setOpen(false); setForm(EMPTY); setError(null); invalidate(); },
     onError: (e) => setError(errorMessage(e, "Could not save record.")),
   });
+
+  const edit = useMutation({
+    mutationFn: () =>
+      updatePostal(editTarget!.id, {
+        record_type: form.record_type,
+        title: form.title,
+        reference_no: form.reference_no || null,
+        from_title: form.from_title || null,
+        to_title: form.to_title || null,
+        record_date: form.record_date || undefined,
+        notes: form.notes || null,
+      }),
+    onSuccess: () => { setEditTarget(null); setError(null); invalidate(); },
+    onError: (e) => setError(errorMessage(e, "Could not update record.")),
+  });
+
   const remove = useMutation({ mutationFn: (id: string) => deletePostal(id), onSuccess: invalidate });
   const set = (patch: Partial<typeof EMPTY>) => setForm((f) => ({ ...f, ...patch }));
+
+  function openAdd() {
+    setForm({ ...EMPTY, record_type: tab === "dispatched" ? "dispatched" : "received", record_date: todayIso() });
+    setError(null);
+    setOpen(true);
+  }
+
+  function openEdit(r: PostalRecord) {
+    setForm({ record_type: r.record_type, title: r.title, reference_no: r.reference_no ?? "", from_title: r.from_title ?? "", to_title: r.to_title ?? "", record_date: r.record_date, notes: r.notes ?? "" });
+    setError(null);
+    setEditTarget(r);
+  }
+
+  const isEditing = editTarget !== null;
+  const dialogOpen = open || isEditing;
 
   return (
     <FrontOfficeShell title="Postal Register">
       <PageHeader
         title="Postal Receive / Dispatch"
-        action={
-          <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setForm({ ...EMPTY, record_type: tab === "dispatched" ? "dispatched" : "received", record_date: todayIso() }); setOpen(true); }}>
-            Add entry
-          </Button>
-        }
+        action={<Button variant="contained" startIcon={<AddIcon />} onClick={openAdd}>Add entry</Button>}
       />
       <FilterTabs<Tab> value={tab} onChange={setTab} options={[{ value: "all", label: "All" }, { value: "received", label: "Received" }, { value: "dispatched", label: "Dispatched" }]} />
       <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2 }}>
@@ -115,6 +141,7 @@ export function PostalPage() {
                   <TableCell>{r.to_title ?? "—"}</TableCell>
                   <TableCell>{r.notes ?? "—"}</TableCell>
                   <TableCell align="right">
+                    <Tooltip title="Edit"><IconButton size="small" onClick={() => openEdit(r)}><EditIcon fontSize="small" /></IconButton></Tooltip>
                     <IconButton size="small" color="error" onClick={() => window.confirm("Delete this record?") && remove.mutate(r.id)}>
                       <DeleteIcon fontSize="small" />
                     </IconButton>
@@ -126,9 +153,9 @@ export function PostalPage() {
         </TableContainer>
       )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Add postal entry</DialogTitle>
-        <Box component="form" onSubmit={(e) => { e.preventDefault(); add.mutate(); }}>
+      <Dialog open={dialogOpen} onClose={() => { setOpen(false); setEditTarget(null); setError(null); }} fullWidth maxWidth="sm">
+        <DialogTitle>{isEditing ? "Edit postal entry" : "Add postal entry"}</DialogTitle>
+        <Box component="form" onSubmit={(e) => { e.preventDefault(); isEditing ? edit.mutate() : add.mutate(); }}>
           <DialogContent>
             <Stack spacing={2}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -149,8 +176,8 @@ export function PostalPage() {
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="submit" variant="contained" disabled={add.isPending}>Save</Button>
+            <Button onClick={() => { setOpen(false); setEditTarget(null); setError(null); }}>Cancel</Button>
+            <Button type="submit" variant="contained" disabled={add.isPending || edit.isPending}>Save</Button>
           </DialogActions>
         </Box>
       </Dialog>
