@@ -42,9 +42,11 @@ import { shellColors as C } from "../theme";
 
 export interface NavItem {
   label: string;
-  to: string;
-  icon: ReactNode;
+  to?: string;
+  icon?: ReactNode;
   children?: { label: string; to: string }[];
+  /** Renders a non-clickable uppercase caption band instead of a link. Hidden in mini mode. */
+  kind?: "section";
 }
 
 const DRAWER_WIDTH = 264;
@@ -145,7 +147,7 @@ function NavGroup({
       <Tooltip title={mini ? item.label : ""} placement="right">
         <ListItemButton
           component={RouterLink}
-          to={item.to}
+          to={item.to ?? "#"}
           selected={active}
           onClick={onNavigate}
           sx={{ ...itemSx, justifyContent: mini ? "center" : "flex-start", px: mini ? 1 : 1.5 }}
@@ -212,6 +214,7 @@ function filterNav(items: NavItem[], query: string): NavItem[] {
   if (!q) return items;
   const out: NavItem[] = [];
   for (const item of items) {
+    if (item.kind === "section") continue;
     const selfMatch = item.label.toLowerCase().includes(q);
     if (!item.children?.length) {
       if (selfMatch) out.push(item);
@@ -225,6 +228,7 @@ function filterNav(items: NavItem[], query: string): NavItem[] {
 
 function findCrumbs(items: NavItem[], fullPath: string): string[] {
   for (const item of items) {
+    if (item.kind === "section") continue;
     if (item.children?.length) {
       const child = item.children.find((c) => matchesPath(c.to, fullPath));
       if (child) return [item.label, child.label];
@@ -365,16 +369,35 @@ export function AppShell({
       )}
 
       <List sx={{ px: 1, pt: 1, flex: 1, overflowY: "auto", overflowX: "hidden" }}>
-        {filtered.map((item) => (
-          <NavGroup
-            key={`${item.label}-${search ? "s" : "n"}`}
-            item={item}
-            fullPath={fullPath}
-            mini={isMini}
-            forceOpen={!!search.trim()}
-            onNavigate={() => setMobileOpen(false)}
-          />
-        ))}
+        {filtered.map((item, index) =>
+          item.kind === "section" ? (
+            isMini ? null : (
+              <Typography
+                key={`section-${item.label}-${index}`}
+                sx={{
+                  px: 1.5,
+                  pt: index === 0 ? 0.5 : 2,
+                  pb: 0.5,
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  letterSpacing: 0.9,
+                  color: C.sidebarTextMuted,
+                }}
+              >
+                {item.label.toUpperCase()}
+              </Typography>
+            )
+          ) : (
+            <NavGroup
+              key={`${item.label}-${search ? "s" : "n"}`}
+              item={item}
+              fullPath={fullPath}
+              mini={isMini}
+              forceOpen={!!search.trim()}
+              onNavigate={() => setMobileOpen(false)}
+            />
+          ),
+        )}
         {filtered.length === 0 && (
           <Typography sx={{ color: C.sidebarTextMuted, fontSize: 13, px: 1.5, py: 1 }}>No menu items match.</Typography>
         )}
