@@ -15,7 +15,7 @@ import {
 import PaymentsIcon from "@mui/icons-material/Payments";
 import GroupIcon from "@mui/icons-material/Group";
 import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlined";
 import CategoryIcon from "@mui/icons-material/Category";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
