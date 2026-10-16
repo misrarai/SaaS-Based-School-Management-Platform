@@ -201,15 +201,19 @@ def test_jazzcash_callback_rejects_tampered_hash(client, monkeypatch):
 
     callback = client.post("/api/v1/fees/gateway/jazzcash/callback", data=fields, follow_redirects=False)
     assert callback.status_code == 303
-    assert "jazzcash=failed" in callback.headers["location"]
+    # A tampered hash now raises ForbiddenError before any DB write and is
+    # redirected to jazzcash=error (not jazzcash=failed).  The real JazzCash
+    # callback can still land successfully — the transaction stays INITIATED.
+    assert "jazzcash=error" in callback.headers["location"]
 
     invoice_after = client.get(f"/api/v1/fees/invoices/{invoice['id']}", headers=headers).json()
     assert invoice_after["status"] == "pending"
     assert client.get("/api/v1/fees/payments", headers=headers).json() == []
 
+    # Transaction must remain INITIATED — the bad-hash callback caused zero DB mutations,
+    # so the legitimate JazzCash callback can still resolve it.
     txns = client.get(f"/api/v1/fees/invoices/{invoice['id']}/gateway-transactions", headers=headers).json()
-    assert txns[0]["status"] == "failed"
-    assert "hash" in txns[0]["gateway_response_message"].lower()
+    assert txns[0]["status"] == "initiated"
 
 
 def test_jazzcash_callback_handles_declined_transaction(client, monkeypatch):
