@@ -52,16 +52,25 @@ export function CreateChallanPage() {
   const generate = useMutation({
     mutationFn: async () => {
       const results: GenerateResult[] = [];
+      const skippedClasses: string[] = [];
       for (const cls of targetClasses) {
-        const r = await generateStructuredInvoices({
-          class_grade_id: cls.id,
-          period_month: month,
-          period_year: year,
-          due_date: dueDate,
-        });
-        results.push(r);
+        try {
+          const r = await generateStructuredInvoices({
+            class_grade_id: cls.id,
+            period_month: month,
+            period_year: year,
+            due_date: dueDate,
+          });
+          results.push(r);
+        } catch {
+          // Class has no structure or no monthly heads — skip it, don't fail the whole batch
+          skippedClasses.push(cls.name);
+        }
       }
-      return results.reduce<GenerateResult>(
+      if (results.length === 0 && skippedClasses.length > 0) {
+        throw new Error(`No fee structure with monthly amounts found for: ${skippedClasses.join(", ")}. Go to Fee → Fee Structure, set at least one MONTHLY fee head with an amount, then try again.`);
+      }
+      const combined = results.reduce<GenerateResult>(
         (acc, r) => ({
           invoices_created: acc.invoices_created + r.invoices_created,
           skipped_existing: acc.skipped_existing + r.skipped_existing,
@@ -69,13 +78,17 @@ export function CreateChallanPage() {
         }),
         { invoices_created: 0, skipped_existing: 0, invoices: [] }
       );
+      if (skippedClasses.length > 0) {
+        combined.skipped_classes = skippedClasses;
+      }
+      return combined;
     },
     onSuccess: (data) => {
       setResult(data);
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["fee-collection-invoices"] });
     },
-    onError: () => setError("No fee structure found for the selected class(es). Go to Fee → Fee Structure, select your class, add fee amounts, then come back here."),
+    onError: (err: Error) => setError(err.message || "Failed to generate challans. Please check fee structure."),
   });
 
   const fmt = (n: number) => `PKR ${n.toLocaleString()}`;
@@ -158,14 +171,17 @@ export function CreateChallanPage() {
 
       {result && (
         <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-          <Stack direction="row" spacing={2} alignItems="center" mb={2}>
+          <Stack direction="row" spacing={2} alignItems="center" mb={2} flexWrap="wrap">
             <CheckCircleIcon color="success" />
             <Typography variant="h6">
-              Challans Generated Successfully
+              Challans Generated
             </Typography>
             <Chip label={`${result.invoices_created} created`} color="success" />
             {result.skipped_existing > 0 && (
               <Chip label={`${result.skipped_existing} skipped (already existed)`} color="warning" />
+            )}
+            {result.skipped_classes && result.skipped_classes.length > 0 && (
+              <Chip label={`${result.skipped_classes.join(", ")} skipped (no structure)`} color="default" />
             )}
           </Stack>
 

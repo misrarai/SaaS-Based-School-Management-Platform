@@ -100,6 +100,7 @@ export interface GenerateResult {
   invoices_created: number;
   skipped_existing: number;
   invoices: InvoiceSummary[];
+  skipped_classes?: string[];
 }
 
 export function generateStructuredInvoices(payload: {
