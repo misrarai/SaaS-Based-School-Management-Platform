@@ -58,9 +58,10 @@ class TeacherService:
         self.db.refresh(profile)
         return _to_teacher_out(profile, user)
 
-    def list_teachers(self, tenant_id: uuid.UUID, query: str | None = None) -> list[TeacherOut]:
+    def list_teachers(self, tenant_id: uuid.UUID, query: str | None = None, is_active: bool | None = None) -> list[TeacherOut]:
         return [
-            _to_teacher_out(profile, user) for profile, user in self.teacher_profiles.list_with_users(tenant_id, query)
+            _to_teacher_out(profile, user)
+            for profile, user in self.teacher_profiles.list_with_users(tenant_id, query, is_active)
         ]
 
     def get_teacher(self, tenant_id: uuid.UUID, teacher_id: uuid.UUID) -> TeacherOut:
@@ -84,8 +85,44 @@ class TeacherService:
             user.token_version += 1  # force logout if deactivated
         if payload.qualification is not None:
             profile.qualification = payload.qualification
+        if payload.employee_code is not None:
+            profile.employee_code = payload.employee_code
+        if payload.hire_date is not None:
+            profile.hire_date = payload.hire_date
 
         self.db.commit()
         self.db.refresh(user)
         self.db.refresh(profile)
         return _to_teacher_out(profile, user)
+
+    def get_teacher_by_user(self, tenant_id: uuid.UUID, user_id: uuid.UUID) -> TeacherOut:
+        profile = self.teacher_profiles.get_by_user_id(tenant_id, user_id)
+        if profile is None:
+            raise NotFoundError("Teacher profile not found")
+        result = self.teacher_profiles.get_with_user(tenant_id, profile.id)
+        if result is None:
+            raise NotFoundError("Teacher profile not found")
+        return _to_teacher_out(*result)
+
+    def update_teacher_self(self, tenant_id: uuid.UUID, user_id: uuid.UUID, payload: TeacherUpdate) -> TeacherOut:
+        profile = self.teacher_profiles.get_by_user_id(tenant_id, user_id)
+        if profile is None:
+            raise NotFoundError("Teacher profile not found")
+        result = self.teacher_profiles.get_with_user(tenant_id, profile.id)
+        if result is None:
+            raise NotFoundError("Teacher profile not found")
+        p, u = result
+        if payload.full_name is not None:
+            u.full_name = payload.full_name
+        if payload.phone_number is not None:
+            u.phone_number = payload.phone_number
+        if payload.qualification is not None:
+            p.qualification = payload.qualification
+        if payload.employee_code is not None:
+            p.employee_code = payload.employee_code
+        if payload.hire_date is not None:
+            p.hire_date = payload.hire_date
+        self.db.commit()
+        self.db.refresh(u)
+        self.db.refresh(p)
+        return _to_teacher_out(p, u)

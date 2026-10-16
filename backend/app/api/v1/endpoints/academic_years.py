@@ -35,6 +35,15 @@ def list_academic_years(
     return AcademicService(db).list_academic_years(current_user.tenant_id)
 
 
+@router.get("/{year_id}", response_model=AcademicYearOut)
+def get_academic_year(
+    year_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> AcademicYearOut:
+    return AcademicService(db).get_academic_year_or_404(current_user.tenant_id, year_id)
+
+
 @router.patch("/{year_id}", response_model=AcademicYearOut)
 def update_academic_year(
     year_id: uuid.UUID,
@@ -43,6 +52,24 @@ def update_academic_year(
     db: Session = Depends(get_db),
 ) -> AcademicYearOut:
     return AcademicService(db).update_academic_year(current_user.tenant_id, year_id, payload)
+
+
+@router.patch("/{year_id}/activate", response_model=AcademicYearOut)
+def activate_academic_year(
+    year_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> AcademicYearOut:
+    return AcademicService(db).activate_academic_year(current_user.tenant_id, year_id)
+
+
+@router.patch("/{year_id}/deactivate", response_model=AcademicYearOut)
+def deactivate_academic_year(
+    year_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> AcademicYearOut:
+    return AcademicService(db).deactivate_academic_year(current_user.tenant_id, year_id)
 
 
 @router.post("/promote", response_model=PromoteStudentsResult)

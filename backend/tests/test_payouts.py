@@ -204,6 +204,11 @@ def test_approve_then_paid_flow_and_regeneration_blocked(client):
     assert paid.json()["status"] == "paid"
     assert paid.json()["paid_at"] is not None
 
+    again = client.post(f"/api/v1/payouts/{payout['id']}/approve", headers=headers)
+    assert again.status_code == 409
+    paid_again = client.post(f"/api/v1/payouts/{payout['id']}/mark-paid", headers=headers)
+    assert paid_again.status_code == 409
+
 
 def test_teacher_sees_only_own_payouts(client):
     tokens = onboard_and_login_admin(client)

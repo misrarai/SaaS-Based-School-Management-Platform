@@ -36,3 +36,7 @@ export function createStaff(payload: StaffCreatePayload) {
 export function setStaffStatus(staffId: string, status: "active" | "inactive") {
   return apiClient.post<StaffMember>(`/staff/${staffId}/status`, { status }).then((res) => res.data);
 }
+
+export function updateStaff(staffId: string, payload: Partial<StaffCreatePayload>) {
+  return apiClient.patch<StaffMember>(`/staff/${staffId}`, payload).then((res) => res.data);
+}

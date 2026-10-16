@@ -43,6 +43,7 @@ export interface GradebookEntry {
   marks_obtained: number | null;
   due_date: string;
   graded_at: string | null;
+  teacher_feedback?: string | null;
 }
 
 export function listAssignments(filters?: { sectionId?: string; subjectId?: string }) {

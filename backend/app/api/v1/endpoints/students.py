@@ -13,6 +13,7 @@ from app.repositories.student_repo import StudentProfileRepository
 from app.schemas.notification import NotificationLogOut, SendReportCardEmailRequest
 from app.schemas.parent import ParentLinkCreate, ParentLinkOut
 from app.schemas.student import StudentCreate, StudentOut, StudentUpdate, StudentWithdrawRequest
+from app.schemas.student_enrollment import StudentEnrollmentOut
 from app.schemas.student_import import StudentImportResult
 from app.services.document_service import DocumentService
 from app.services.notification_service import NotificationService
@@ -122,6 +123,15 @@ def reactivate_student(
     db: Session = Depends(get_db),
 ) -> StudentOut:
     return StudentService(db).reactivate_student(current_user.tenant_id, student_id)
+
+
+@router.get("/{student_id}/enrollments", response_model=list[StudentEnrollmentOut])
+def list_student_enrollments(
+    student_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
+    db: Session = Depends(get_db),
+) -> list[StudentEnrollmentOut]:
+    return StudentService(db).get_enrollment_history(current_user.tenant_id, student_id)
 
 
 @router.post("/{student_id}/parents", response_model=ParentLinkOut, status_code=status.HTTP_201_CREATED)

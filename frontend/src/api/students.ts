@@ -81,6 +81,7 @@ export interface StudentCreatePayload {
 
 export interface StudentListFilters {
   classGradeId?: string;
+  sectionId?: string;
   familyId?: string;
   status?: "active" | "old" | "withdrawn" | "all";
   query?: string;
@@ -90,6 +91,7 @@ export function listStudents(filters?: StudentListFilters | string) {
   const normalized: StudentListFilters = typeof filters === "string" ? { classGradeId: filters } : filters ?? {};
   const params = {
     class_grade_id: normalized.classGradeId || undefined,
+    section_id: normalized.sectionId || undefined,
     family_id: normalized.familyId || undefined,
     status: normalized.status || undefined,
     q: normalized.query || undefined,
@@ -151,4 +153,72 @@ export async function downloadImportSample() {
   link.click();
   link.remove();
   window.URL.revokeObjectURL(url);
+}
+
+export interface StudentUpdatePayload {
+  full_name?: string;
+  class_grade_id?: string | null;
+  section_id?: string | null;
+  family_id?: string | null;
+  roll_number?: string | null;
+  guardian_name?: string | null;
+  admission_date?: string | null;
+  date_of_birth?: string | null;
+  status?: string;
+  is_active?: boolean;
+  admission_detail?: StudentAdmissionDetailPayload;
+}
+
+export interface StudentEnrollmentRecord {
+  id: string;
+  student_id: string;
+  class_grade_id: string;
+  section_id: string | null;
+  academic_year_id: string | null;
+  enrolled_at: string;
+  left_at: string | null;
+  status: string;
+  notes: string | null;
+}
+
+export function listStudentEnrollments(studentId: string) {
+  return apiClient.get<StudentEnrollmentRecord[]>(`/students/${studentId}/enrollments`).then((res) => res.data);
+}
+
+export function updateStudent(studentId: string, payload: StudentUpdatePayload) {
+  return apiClient.patch<Student>(`/students/${studentId}`, payload).then((res) => res.data);
+}
+
+function fetchPdf(path: string, params?: Record<string, unknown>) {
+  return apiClient.get<Blob>(path, { params, responseType: "blob" }).then((res) => res.data);
+}
+
+export function fetchIdCardPdf(studentId: string) {
+  return fetchPdf(`/students/${studentId}/id-card`);
+}
+
+export function fetchCertificatePdf(studentId: string, achievementText?: string) {
+  return fetchPdf(`/students/${studentId}/certificate`, { achievement_text: achievementText || undefined });
+}
+
+export function fetchReportCardPdf(studentId: string, periodMonth?: number, periodYear?: number) {
+  return fetchPdf(`/students/${studentId}/report-card`, { period_month: periodMonth, period_year: periodYear });
+}
+
+export interface NotificationLogEntry {
+  id: string;
+  channel: string;
+  recipient_email: string | null;
+  recipient_phone: string | null;
+  status: string;
+  detail: string | null;
+}
+
+export function emailReportCard(
+  studentId: string,
+  payload: { period_month?: number; period_year?: number; to_email?: string },
+) {
+  return apiClient
+    .post<NotificationLogEntry[]>(`/students/${studentId}/report-card/email`, payload)
+    .then((res) => res.data);
 }

@@ -9,6 +9,7 @@ from app.repositories.staff_repo import StaffRepository
 from app.repositories.student_repo import StudentProfileRepository
 from app.repositories.teacher_repo import TeacherProfileRepository
 from app.services.attendance_service import AttendanceService, HrAttendanceService
+from app.services.dashboard_overview import DashboardOverviewBuilder
 from app.services.fee_service import FeeService
 from app.services.schedule_service import ScheduleService
 
@@ -87,4 +88,5 @@ class DashboardService:
             "fees_pending": fee_summary.total_pending,
             "fees_overdue": fee_summary.total_overdue,
             "online_classes_today": len(sessions_today),
+            "overview": DashboardOverviewBuilder(self.db).build(tenant_id, today),
         }

@@ -9,10 +9,16 @@ from app.models.user import RoleEnum, User
 from app.schemas.academic import (
     ClassGradeCreate,
     ClassGradeOut,
+    ClassGradeUpdate,
+    ClassOverview,
     SectionCreate,
     SectionOut,
+    SectionUpdate,
+    SectionWithClass,
     SubjectCreate,
     SubjectOut,
+    SubjectUpdate,
+    SubjectWithClass,
 )
 from app.services.academic_service import AcademicService
 
@@ -72,3 +78,84 @@ def list_subjects(
     db: Session = Depends(get_db),
 ) -> list[SubjectOut]:
     return AcademicService(db).list_subjects(current_user.tenant_id, class_id)
+
+
+@router.get("/classes/overview", response_model=list[ClassOverview])
+def classes_overview(
+    current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
+    db: Session = Depends(get_db),
+) -> list[ClassOverview]:
+    return AcademicService(db).class_overview(current_user.tenant_id)
+
+
+@router.get("/sections", response_model=list[SectionWithClass])
+def list_all_sections(
+    current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
+    db: Session = Depends(get_db),
+) -> list[SectionWithClass]:
+    return AcademicService(db).list_all_sections(current_user.tenant_id)
+
+
+@router.get("/subjects", response_model=list[SubjectWithClass])
+def list_all_subjects(
+    current_user: User = Depends(require_role(RoleEnum.ADMIN, RoleEnum.TEACHER)),
+    db: Session = Depends(get_db),
+) -> list[SubjectWithClass]:
+    return AcademicService(db).list_all_subjects(current_user.tenant_id)
+
+
+@router.patch("/classes/{class_id}", response_model=ClassGradeOut)
+def update_class(
+    class_id: uuid.UUID,
+    payload: ClassGradeUpdate,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> ClassGradeOut:
+    return AcademicService(db).update_class_grade(current_user.tenant_id, class_id, payload)
+
+
+@router.delete("/classes/{class_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_class(
+    class_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> None:
+    AcademicService(db).delete_class_grade(current_user.tenant_id, class_id)
+
+
+@router.patch("/sections/{section_id}", response_model=SectionOut)
+def update_section(
+    section_id: uuid.UUID,
+    payload: SectionUpdate,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> SectionOut:
+    return AcademicService(db).update_section(current_user.tenant_id, section_id, payload)
+
+
+@router.delete("/sections/{section_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_section(
+    section_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> None:
+    AcademicService(db).delete_section(current_user.tenant_id, section_id)
+
+
+@router.patch("/subjects/{subject_id}", response_model=SubjectOut)
+def update_subject(
+    subject_id: uuid.UUID,
+    payload: SubjectUpdate,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> SubjectOut:
+    return AcademicService(db).update_subject(current_user.tenant_id, subject_id, payload)
+
+
+@router.delete("/subjects/{subject_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_subject(
+    subject_id: uuid.UUID,
+    current_user: User = Depends(require_role(RoleEnum.ADMIN)),
+    db: Session = Depends(get_db),
+) -> None:
+    AcademicService(db).delete_subject(current_user.tenant_id, subject_id)

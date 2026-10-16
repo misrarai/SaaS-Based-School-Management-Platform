@@ -1,59 +1,74 @@
 import DashboardIcon from "@mui/icons-material/DashboardOutlined";
-import ClassIcon from "@mui/icons-material/ClassOutlined";
 import SchoolIcon from "@mui/icons-material/SchoolOutlined";
 import BadgeIcon from "@mui/icons-material/BadgeOutlined";
-import EventIcon from "@mui/icons-material/EventOutlined";
+import ClassIcon from "@mui/icons-material/ClassOutlined";
 import FactCheckIcon from "@mui/icons-material/FactCheckOutlined";
+import VideoLibraryIcon from "@mui/icons-material/VideoLibraryOutlined";
+import MenuBookIcon from "@mui/icons-material/MenuBookOutlined";
+import QuizIcon from "@mui/icons-material/QuizOutlined";
+import AssignmentIcon from "@mui/icons-material/AssignmentOutlined";
+import LiveTvIcon from "@mui/icons-material/LiveTvOutlined";
 import PaymentsIcon from "@mui/icons-material/PaymentsOutlined";
-import PaidIcon from "@mui/icons-material/PaidOutlined";
-import NotificationsIcon from "@mui/icons-material/NotificationsOutlined";
+import CampaignIcon from "@mui/icons-material/CampaignOutlined";
+import PeopleIcon from "@mui/icons-material/PeopleOutlined";
+import SettingsIcon from "@mui/icons-material/SettingsOutlined";
+import AssessmentIcon from "@mui/icons-material/AssessmentOutlined";
 import type { NavItem } from "../../components/AppShell";
 
 export const adminNavItems: NavItem[] = [
-  { label: "Dashboard", to: "/admin", icon: <DashboardIcon fontSize="small" /> },
   {
-    label: "Academics",
-    to: "/admin/classes",
-    icon: <ClassIcon fontSize="small" />,
-    children: [
-      { label: "Classes & Subjects", to: "/admin/classes" },
-      { label: "Teachers", to: "/admin/teachers" },
-    ],
+    label: "Dashboard",
+    to: "/admin",
+    icon: <DashboardIcon fontSize="small" />,
   },
+
   {
     label: "Students",
     to: "/admin/students",
     icon: <SchoolIcon fontSize="small" />,
     children: [
-      { label: "Active Students", to: "/admin/students?status=active" },
+      { label: "Student Analytics", to: "/admin/students/analytics" },
+      { label: "Active Students", to: "/admin/students" },
       { label: "Family List", to: "/admin/families" },
-      { label: "Admission Register", to: "/admin/students?status=all" },
-      { label: "Withdrawal Register", to: "/admin/students/withdrawals" },
-      { label: "Old Students", to: "/admin/students?status=old" },
-      { label: "Extra Coaching", to: "/admin/students/extra-coaching" },
+      { label: "Admission Register", to: "/admin/students/register" },
+      { label: "Old Students", to: "/admin/students/withdrawals" },
       { label: "Student Reports", to: "/admin/students/reports" },
-      { label: "Student Certificates", to: "/admin/students/certificates" },
+      { label: "Student Documents", to: "/admin/students/documents" },
       { label: "Student Cards", to: "/admin/students/cards" },
     ],
   },
+
   {
-    label: "HR / Staff",
-    to: "/admin/staff",
+    label: "Teachers",
+    to: "/admin/teachers",
     icon: <BadgeIcon fontSize="small" />,
     children: [
-      { label: "Active Staff", to: "/admin/staff?status=active" },
-      { label: "Old Staff", to: "/admin/staff?status=inactive" },
+      { label: "All Teachers", to: "/admin/teachers" },
     ],
   },
+
   {
-    label: "Schedule",
-    to: "/admin/schedule",
-    icon: <EventIcon fontSize="small" />,
+    label: "Parents",
+    to: "/admin/parents",
+    icon: <PeopleIcon fontSize="small" />,
     children: [
-      { label: "Timetable", to: "/admin/schedule" },
-      { label: "Online Classes", to: "/admin/schedule?create=online" },
+      { label: "All Parents", to: "/admin/parents" },
+      { label: "Send Message", to: "/admin/parents/message" },
     ],
   },
+
+  {
+    label: "Classes",
+    to: "/admin/classes",
+    icon: <ClassIcon fontSize="small" />,
+    children: [
+      { label: "Class List", to: "/admin/classes" },
+      { label: "Sections", to: "/admin/classes/sections" },
+      { label: "Subjects", to: "/admin/classes/subjects" },
+      { label: "Timetable", to: "/admin/schedule" },
+    ],
+  },
+
   {
     label: "Attendance",
     to: "/admin/attendance",
@@ -61,31 +76,102 @@ export const adminNavItems: NavItem[] = [
     children: [
       { label: "Student Attendance", to: "/admin/attendance" },
       { label: "Teacher Attendance", to: "/admin/attendance/teachers" },
-      { label: "Staff Attendance", to: "/admin/attendance/staff" },
+      { label: "Attendance Reports", to: "/admin/attendance/reports" },
+      { label: "Holiday Calendar", to: "/admin/attendance/settings" },
     ],
   },
+
   {
-    label: "Fees",
+    label: "Live Classes",
+    to: "/admin/lms/live-classes",
+    icon: <LiveTvIcon fontSize="small" />,
+    children: [
+      { label: "All Live Classes", to: "/admin/lms/live-classes" },
+    ],
+  },
+
+  {
+    label: "Video Lectures",
+    to: "/admin/lms/videos",
+    icon: <VideoLibraryIcon fontSize="small" />,
+    children: [
+      { label: "All Videos", to: "/admin/lms/videos" },
+    ],
+  },
+
+  {
+    label: "Books Library",
+    to: "/admin/lms/books",
+    icon: <MenuBookIcon fontSize="small" />,
+    children: [
+      { label: "All Books", to: "/admin/lms/books" },
+    ],
+  },
+
+  {
+    label: "Quizzes",
+    to: "/admin/lms/quizzes",
+    icon: <QuizIcon fontSize="small" />,
+    children: [
+      { label: "All Quizzes", to: "/admin/lms/quizzes" },
+      { label: "Results", to: "/admin/lms/reports" },
+    ],
+  },
+
+  {
+    label: "Assignments",
+    to: "/admin/lms/assignments",
+    icon: <AssignmentIcon fontSize="small" />,
+    children: [
+      { label: "All Assignments", to: "/admin/lms/assignments" },
+    ],
+  },
+
+  {
+    label: "Fee",
     to: "/admin/fees",
     icon: <PaymentsIcon fontSize="small" />,
     children: [
       { label: "Fee Plans", to: "/admin/fees" },
-      { label: "Student Subscriptions", to: "/admin/fees/subscriptions" },
-      { label: "Payments", to: "/admin/fees/payments/all" },
-      { label: "Pending Payments", to: "/admin/fees/payments/pending" },
-      { label: "Payment Verification", to: "/admin/fees/payments" },
-      { label: "Receipts", to: "/admin/fees/receipts" },
-      { label: "Reports", to: "/admin/fees/reports" },
+      { label: "Invoices", to: "/admin/fees/invoices" },
+      { label: "Payments", to: "/admin/fees/payments" },
+      { label: "Pending Fees", to: "/admin/fees/payments/pending" },
+      { label: "Fee Reports", to: "/admin/fees/reports" },
     ],
   },
+
   {
-    label: "Payouts",
-    to: "/admin/payouts",
-    icon: <PaidIcon fontSize="small" />,
+    label: "Notices",
+    to: "/admin/communication/notices",
+    icon: <CampaignIcon fontSize="small" />,
     children: [
-      { label: "Payout Rates", to: "/admin/payouts/rates" },
-      { label: "Payouts", to: "/admin/payouts" },
+      { label: "Notice Board", to: "/admin/communication/notices" },
+      { label: "Send Message", to: "/admin/communication/messages" },
+      { label: "Events", to: "/admin/communication/events" },
     ],
   },
-  { label: "Notifications", to: "/admin/notifications", icon: <NotificationsIcon fontSize="small" /> },
+
+  {
+    label: "Reports",
+    to: "/admin/students/reports",
+    icon: <AssessmentIcon fontSize="small" />,
+    children: [
+      { label: "Student Reports", to: "/admin/students/reports" },
+      { label: "Attendance Reports", to: "/admin/attendance/reports" },
+      { label: "Fee Reports", to: "/admin/fees/reports" },
+      { label: "LMS Reports", to: "/admin/lms/reports" },
+    ],
+  },
+
+  {
+    label: "Settings",
+    to: "/admin/settings",
+    icon: <SettingsIcon fontSize="small" />,
+    children: [
+      { label: "All Settings", to: "/admin/settings" },
+      { label: "Academic Years", to: "/admin/academic-years" },
+      { label: "Student Promotion", to: "/admin/settings/promotion" },
+      { label: "Automation", to: "/admin/settings/automation" },
+    ],
+  },
 ];

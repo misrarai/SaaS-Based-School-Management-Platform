@@ -27,6 +27,7 @@ from app.schemas.attendance import (
     TeacherAttendanceOut,
 )
 from app.services.attendance_service import AttendanceService, HrAttendanceService
+from app.services.automation_service import AutomationService
 from app.services.notification_service import NotificationService
 from app.services.parent_service import ParentService
 
@@ -60,8 +61,14 @@ def mark_attendance(
             if found is None:
                 continue
             _, student_user = found
+            date_iso = record.marked_at.date().isoformat()
             notification_service.notify_attendance_absent(
-                current_user.tenant_id, record.student_id, student_user.full_name, record.marked_at.date().isoformat()
+                current_user.tenant_id, record.student_id, student_user.full_name, date_iso
+            )
+            AutomationService(db).fire(
+                current_user.tenant_id,
+                "student_absent",
+                {"student_id": record.student_id, "student_name": student_user.full_name, "date": date_iso},
             )
 
     return records

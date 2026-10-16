@@ -9,7 +9,9 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  IconButton,
   InputAdornment,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -19,44 +21,73 @@ import {
   TableHead,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SearchIcon from "@mui/icons-material/Search";
+import EditIcon from "@mui/icons-material/EditOutlined";
 import { AppShell } from "../../components/AppShell";
 import { adminNavItems } from "./adminNav";
 import { darkTableHeadSx } from "../../components/tableStyles";
-import { createTeacher, listTeachers, setTeacherActive } from "../../api/teachers";
+import { createTeacher, listTeachers, setTeacherActive, type Teacher } from "../../api/teachers";
+import { EditTeacherDialog } from "./EditDialogs";
 
 export function TeachersPage() {
   const queryClient = useQueryClient();
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "true" | "false">("");
+
   const teachersQuery = useQuery({
-    queryKey: ["teachers", appliedSearch],
-    queryFn: () => listTeachers(appliedSearch || undefined),
+    queryKey: ["teachers", appliedSearch, statusFilter],
+    queryFn: () =>
+      listTeachers(
+        appliedSearch || undefined,
+        statusFilter === "" ? undefined : statusFilter === "true",
+      ),
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [employeeCode, setEmployeeCode] = useState("");
+  const [hireDate, setHireDate] = useState("");
   const [qualification, setQualification] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+
+  function resetCreateForm() {
+    setFullName("");
+    setEmail("");
+    setPassword("");
+    setPhone("");
+    setEmployeeCode("");
+    setHireDate("");
+    setQualification("");
+    setCreateError(null);
+  }
 
   const addTeacher = useMutation({
     mutationFn: () =>
-      createTeacher({ full_name: fullName, email, password, qualification: qualification || undefined }),
+      createTeacher({
+        full_name: fullName,
+        email,
+        password,
+        phone_number: phone.trim() || undefined,
+        employee_code: employeeCode.trim() || undefined,
+        hire_date: hireDate || undefined,
+        qualification: qualification.trim() || undefined,
+      }),
     onSuccess: () => {
-      setFullName("");
-      setEmail("");
-      setPassword("");
-      setQualification("");
-      setError(null);
+      resetCreateForm();
       setDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
     },
-    onError: () => setError("Could not create teacher (email may already be in use)."),
+    onError: () => setCreateError("Could not create teacher. Email may already be in use."),
   });
 
   const toggleActive = useMutation({
@@ -77,7 +108,7 @@ export function TeachersPage() {
         <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", alignItems: "center" }}>
           <TextField
             size="small"
-            placeholder="Search by name, email, or qualification"
+            placeholder="Search by name, email, employee ID or qualification"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && setAppliedSearch(searchInput)}
@@ -92,18 +123,30 @@ export function TeachersPage() {
               },
             }}
           />
+          <TextField
+            select
+            size="small"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "" | "true" | "false")}
+            sx={{ minWidth: 130 }}
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="true">Active</MenuItem>
+            <MenuItem value="false">Inactive</MenuItem>
+          </TextField>
           <Button variant="contained" color="success" onClick={() => setAppliedSearch(searchInput)}>
             Search
           </Button>
         </Stack>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-          There are <strong>{teachersQuery.data?.length ?? 0}</strong> teachers registered.
+          There are <strong>{teachersQuery.data?.length ?? 0}</strong> teacher(s) matching current filters.
         </Typography>
       </Paper>
 
       {teachersQuery.isLoading && <Typography>Loading…</Typography>}
-      {teachersQuery.data?.length === 0 && (
-        <Alert severity="info">No teachers yet — click "Add teacher" to create the first one.</Alert>
+      {!teachersQuery.isLoading && teachersQuery.data?.length === 0 && (
+        <Alert severity="info">No teachers found. Try adjusting filters or click "Add teacher".</Alert>
       )}
 
       {!!teachersQuery.data?.length && (
@@ -112,8 +155,11 @@ export function TeachersPage() {
             <TableHead sx={darkTableHeadSx}>
               <TableRow>
                 <TableCell>Name</TableCell>
+                <TableCell>Employee ID</TableCell>
                 <TableCell>Email</TableCell>
+                <TableCell>Phone</TableCell>
                 <TableCell>Qualification</TableCell>
+                <TableCell>Joining Date</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell align="right">Actions</TableCell>
               </TableRow>
@@ -121,9 +167,12 @@ export function TeachersPage() {
             <TableBody>
               {teachersQuery.data.map((t) => (
                 <TableRow key={t.id} hover>
-                  <TableCell>{t.full_name}</TableCell>
+                  <TableCell sx={{ fontWeight: 500 }}>{t.full_name}</TableCell>
+                  <TableCell>{t.employee_code ?? "—"}</TableCell>
                   <TableCell>{t.email}</TableCell>
+                  <TableCell>{t.phone_number ?? "—"}</TableCell>
                   <TableCell>{t.qualification ?? "—"}</TableCell>
+                  <TableCell>{t.hire_date ?? "—"}</TableCell>
                   <TableCell>
                     <Chip
                       size="small"
@@ -132,9 +181,20 @@ export function TeachersPage() {
                     />
                   </TableCell>
                   <TableCell align="right">
-                    <Button size="small" onClick={() => toggleActive.mutate({ id: t.id, isActive: !t.is_active })}>
-                      {t.is_active ? "Deactivate" : "Reactivate"}
-                    </Button>
+                    <Stack direction="row" spacing={0.5} justifyContent="flex-end">
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => setEditingTeacher(t)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Button
+                        size="small"
+                        color={t.is_active ? "error" : "success"}
+                        onClick={() => toggleActive.mutate({ id: t.id, isActive: !t.is_active })}
+                      >
+                        {t.is_active ? "Deactivate" : "Reactivate"}
+                      </Button>
+                    </Stack>
                   </TableCell>
                 </TableRow>
               ))}
@@ -143,7 +203,14 @@ export function TeachersPage() {
         </TableContainer>
       )}
 
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="xs">
+      {editingTeacher && (
+        <EditTeacherDialog
+          teacher={editingTeacher}
+          onClose={() => setEditingTeacher(null)}
+        />
+      )}
+
+      <Dialog open={dialogOpen} onClose={() => { setDialogOpen(false); resetCreateForm(); }} fullWidth maxWidth="sm">
         <DialogTitle>Add a teacher</DialogTitle>
         <Box
           component="form"
@@ -154,43 +221,69 @@ export function TeachersPage() {
         >
           <DialogContent>
             <Stack spacing={2}>
-              <TextField
-                label="Full name"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                autoFocus
-                fullWidth
-              />
-              <TextField
-                label="Email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                fullWidth
-              />
-              <TextField
-                label="Temporary password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                fullWidth
-              />
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="Full name"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  required
+                  autoFocus
+                  fullWidth
+                />
+                <TextField
+                  label="Phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="Email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  fullWidth
+                />
+                <TextField
+                  label="Temporary password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  fullWidth
+                />
+              </Stack>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <TextField
+                  label="Employee code (optional)"
+                  value={employeeCode}
+                  onChange={(e) => setEmployeeCode(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="Joining date (optional)"
+                  type="date"
+                  value={hireDate}
+                  onChange={(e) => setHireDate(e.target.value)}
+                  fullWidth
+                  slotProps={{ inputLabel: { shrink: true } }}
+                />
+              </Stack>
               <TextField
                 label="Qualification (optional)"
                 value={qualification}
                 onChange={(e) => setQualification(e.target.value)}
                 fullWidth
               />
-              {error && <Alert severity="error">{error}</Alert>}
+              {createError && <Alert severity="error">{createError}</Alert>}
             </Stack>
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button onClick={() => { setDialogOpen(false); resetCreateForm(); }}>Cancel</Button>
             <Button type="submit" variant="contained" disabled={addTeacher.isPending}>
-              Create
+              {addTeacher.isPending ? "Creating…" : "Create"}
             </Button>
           </DialogActions>
         </Box>

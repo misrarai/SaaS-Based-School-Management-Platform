@@ -18,6 +18,8 @@ class TeacherUpdate(BaseModel):
     full_name: str | None = None
     phone_number: str | None = None
     qualification: str | None = None
+    employee_code: str | None = None
+    hire_date: date | None = None
     is_active: bool | None = None
 
 

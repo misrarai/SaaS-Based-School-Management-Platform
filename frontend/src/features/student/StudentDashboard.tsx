@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Button, Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Card, CardContent, Chip, Grid, Stack, Typography } from "@mui/material";
+import CampaignIcon from "@mui/icons-material/CampaignOutlined";
+import EditNoteIcon from "@mui/icons-material/EditNoteOutlined";
 import { AppShell } from "../../components/AppShell";
 import { studentNavItems } from "./studentNav";
 import { listSessions, type ClassSession } from "../../api/schedule";
@@ -8,6 +11,7 @@ import { getStudentSummary } from "../../api/attendance";
 import { getMyStudentProfile } from "../../api/students";
 import { listInvoices } from "../../api/fees";
 import { getProgress } from "../../api/progress";
+import { listNotices, listDiary } from "../../api/communication";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -44,6 +48,7 @@ function useCountdown(target: Date | null) {
 }
 
 export function StudentDashboard() {
+  const navigate = useNavigate();
   const today = new Date();
   const sessionsQuery = useQuery({
     queryKey: ["schedule-sessions", "student-upcoming"],
@@ -78,11 +83,78 @@ export function StudentDashboard() {
   });
   const earnedBadges = (progressQuery.data?.badges ?? []).filter((b) => b.achieved);
 
+  const noticesQuery = useQuery({
+    queryKey: ["notices", "student-dashboard"],
+    queryFn: () => listNotices(),
+  });
+  const latestNotice = (noticesQuery.data ?? []).find((n) => n.is_pinned) ?? noticesQuery.data?.[0];
+
+  const todayStr = today.toISOString().slice(0, 10);
+  const homeworkQuery = useQuery({
+    queryKey: ["diary", "student-dashboard", todayStr],
+    queryFn: () => listDiary({ date_from: todayStr, date_to: todayStr }),
+  });
+  const todayHomework = homeworkQuery.data ?? [];
+
   return (
     <AppShell title="Student Dashboard" navItems={studentNavItems}>
       <Typography variant="h4" sx={{ mb: 3 }}>
-        Welcome back{profileQuery.data ? `, ${profileQuery.data.full_name.split(" ")[0]}` : ""}
+        Welcome back{profileQuery.data ? `, ${profileQuery.data.full_name.split(" ")[0]}` : ""} 👋
       </Typography>
+
+      {/* ── Notices + Homework quick cards ── */}
+      {(latestNotice || todayHomework.length > 0) && (
+        <Stack spacing={1.5} sx={{ mb: 3 }}>
+          {latestNotice && (
+            <Card
+              variant="outlined"
+              sx={{ borderRadius: 2, borderColor: "warning.main", cursor: "pointer" }}
+              onClick={() => navigate("/student/notices")}
+            >
+              <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <CampaignIcon color="warning" />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" color="warning.main" fontWeight={700}>
+                      📢 NOTICE
+                    </Typography>
+                    <Typography variant="body2" fontWeight={600} noWrap>{latestNotice.title}</Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      {latestNotice.body}
+                    </Typography>
+                  </Box>
+                  <Typography variant="caption" color="primary">View all →</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
+
+          {todayHomework.length > 0 && (
+            <Card
+              variant="outlined"
+              sx={{ borderRadius: 2, borderColor: "primary.light", cursor: "pointer" }}
+              onClick={() => navigate("/student/homework")}
+            >
+              <CardContent sx={{ py: 1.5, "&:last-child": { pb: 1.5 } }}>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <EditNoteIcon color="primary" />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="caption" color="primary.main" fontWeight={700}>
+                      📖 TODAY'S HOMEWORK ({todayHomework.length} subject{todayHomework.length > 1 ? "s" : ""})
+                    </Typography>
+                    {todayHomework.slice(0, 2).map((h) => (
+                      <Typography key={h.id} variant="caption" color="text.secondary" sx={{ display: "block" }} noWrap>
+                        {h.subject_name && `${h.subject_name}: `}{h.homework}
+                      </Typography>
+                    ))}
+                  </Box>
+                  <Typography variant="caption" color="primary">View all →</Typography>
+                </Stack>
+              </CardContent>
+            </Card>
+          )}
+        </Stack>
+      )}
 
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid size={{ xs: 12, md: 6 }}>

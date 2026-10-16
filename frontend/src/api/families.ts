@@ -37,3 +37,11 @@ export function getNextFamilyNumber() {
     .get<{ next_family_number: string }>("/families/next-number")
     .then((res) => res.data.next_family_number);
 }
+
+export function getFamily(familyId: string) {
+  return apiClient.get<Family>(`/families/${familyId}`).then((res) => res.data);
+}
+
+export function updateFamily(familyId: string, payload: Partial<FamilyCreatePayload>) {
+  return apiClient.patch<Family>(`/families/${familyId}`, payload).then((res) => res.data);
+}

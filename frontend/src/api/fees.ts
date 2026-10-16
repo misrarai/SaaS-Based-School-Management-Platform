@@ -188,3 +188,7 @@ export function getReportSummary(periodMonth?: number, periodYear?: number) {
     .get<FeeReportSummary>("/fees/reports/summary", { params: { period_month: periodMonth, period_year: periodYear } })
     .then((res) => res.data);
 }
+
+export function updateFeePlan(planId: string, payload: { monthly_amount?: number; name?: string | null }) {
+  return apiClient.patch<FeePlan>(`/fees/plans/${planId}`, payload).then((res) => res.data);
+}

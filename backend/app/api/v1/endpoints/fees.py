@@ -33,6 +33,7 @@ from app.schemas.fee import (
     PaymentVerifyRequest,
     SubscriptionEntry,
 )
+from app.services.automation_service import AutomationService
 from app.services.fee_service import FeeService
 from app.services.notification_service import NotificationService
 from app.services.parent_service import ParentService
@@ -330,6 +331,11 @@ def verify_payment(
             _, student_user = found
             NotificationService(db).notify_payment_verified(
                 tenant_id, invoice.student_id, student_user.full_name, float(payment.amount)
+            )
+            AutomationService(db).fire(
+                tenant_id,
+                "payment_verified",
+                {"student_id": invoice.student_id, "student_name": student_user.full_name, "amount": float(payment.amount)},
             )
 
     return payment

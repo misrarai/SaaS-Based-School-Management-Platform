@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, Numeric, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -37,6 +37,15 @@ class ClassGrade(UUIDPKMixin, TimestampMixin, Base):
     academic_year_id: Mapped[uuid.UUID | None] = mapped_column(
         GUID(), ForeignKey("academic_years.id"), nullable=True, index=True
     )
+    # Optional Skoolzoom-style fields
+    class_fee: Mapped[float | None] = mapped_column(Numeric(12, 2), nullable=True)
+    capacity: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    incharge_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("teacher_profiles.id"), nullable=True, index=True
+    )
+    assistant_incharge_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("teacher_profiles.id"), nullable=True, index=True
+    )
 
 
 class Section(UUIDPKMixin, TimestampMixin, Base):
@@ -46,6 +55,10 @@ class Section(UUIDPKMixin, TimestampMixin, Base):
     tenant_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("tenants.id"), nullable=False, index=True)
     class_grade_id: Mapped[uuid.UUID] = mapped_column(GUID(), ForeignKey("class_grades.id"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    # The section in-charge ("class teacher") — distinct from the per-subject teachers on Course.
+    class_teacher_id: Mapped[uuid.UUID | None] = mapped_column(
+        GUID(), ForeignKey("teacher_profiles.id"), nullable=True, index=True
+    )
 
 
 class Subject(UUIDPKMixin, TimestampMixin, Base):

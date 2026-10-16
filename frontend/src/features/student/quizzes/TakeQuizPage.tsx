@@ -65,7 +65,7 @@ export function TakeQuizPage() {
   const reviewQuery = useQuery({
     queryKey: ["quiz-my-attempt", quizId],
     queryFn: () => getMyAttempt(quizId!),
-    enabled: !!quizId && hasSubmitted,
+    enabled: !!quizId && (hasSubmitted || submit.isSuccess),
   });
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
@@ -127,18 +127,29 @@ export function TakeQuizPage() {
               <CardContent>
                 {stillGrading ? (
                   <Alert severity="info" sx={{ mb: 0 }}>
-                    Submitted — your teacher still needs to grade one or more short-answer questions before your
+                    ✅ Quiz submitted! Your teacher still needs to grade one or more short-answer questions before your
                     final result is ready.
                   </Alert>
                 ) : (
-                  <Stack direction="row" spacing={3} sx={{ alignItems: "baseline", flexWrap: "wrap" }}>
-                    <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                      Score: {review.score} / {review.max_score}
+                  <Stack spacing={1.5}>
+                    <Stack direction="row" spacing={3} sx={{ alignItems: "center", flexWrap: "wrap" }}>
+                      <Typography variant="h4" sx={{ fontWeight: 800 }}>
+                        {review.score} / {review.max_score}
+                      </Typography>
+                      <Typography variant="h5" color="text.secondary">
+                        {review.percentage}%
+                      </Typography>
+                      <Chip label={`Grade: ${review.grade}`} color={gradeColor(review.grade)} size="medium" sx={{ fontWeight: 700, fontSize: 16, px: 1 }} />
+                    </Stack>
+                    <Typography variant="body1" color={Number(review.percentage) >= 50 ? "success.main" : "error.main"} fontWeight={600}>
+                      {Number(review.percentage) >= 90
+                        ? "🌟 Excellent! Outstanding performance!"
+                        : Number(review.percentage) >= 70
+                        ? "👍 Great job! Keep it up!"
+                        : Number(review.percentage) >= 50
+                        ? "✅ Passed! You can do even better next time."
+                        : "❌ Better luck next time. Keep studying!"}
                     </Typography>
-                    <Typography variant="h6" color="text.secondary">
-                      {review.percentage}%
-                    </Typography>
-                    <Chip label={`Grade ${review.grade}`} color={gradeColor(review.grade)} sx={{ fontWeight: 700 }} />
                   </Stack>
                 )}
               </CardContent>

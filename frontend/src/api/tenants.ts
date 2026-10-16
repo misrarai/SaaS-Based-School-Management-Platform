@@ -27,3 +27,8 @@ export interface TenantOnboardResponse {
 export function onboardSchool(payload: TenantOnboardPayload) {
   return apiClient.post<TenantOnboardResponse>("/tenants/onboard", payload).then((res) => res.data);
 }
+
+/** Admin-only: the signed-in admin's school (used for sidebar branding). */
+export function getMyTenant() {
+  return apiClient.get<TenantOut>("/tenants/me").then((res) => res.data);
+}

@@ -1,6 +1,6 @@
 import { apiClient } from "./client";
 
-export type ResourceType = "link" | "document";
+export type ResourceType = "link" | "document" | "video" | "notes" | "worksheet";
 
 export interface Resource {
   id: string;
@@ -12,6 +12,7 @@ export interface Resource {
   class_grade_id: string | null;
   subject_id: string | null;
   category: string | null;
+  chapter_id: string | null;
   uploaded_by_user_id: string;
 }
 
@@ -24,13 +25,20 @@ export interface ResourceCreatePayload {
   class_grade_id?: string;
   subject_id?: string;
   category?: string;
+  chapter_id?: string;
 }
 
-export function listResources(filters?: { classGradeId?: string; subjectId?: string; category?: string }) {
+export function listResources(filters?: {
+  classGradeId?: string;
+  subjectId?: string;
+  category?: string;
+  resourceType?: ResourceType;
+}) {
   const params = {
     class_grade_id: filters?.classGradeId || undefined,
     subject_id: filters?.subjectId || undefined,
     category: filters?.category || undefined,
+    resource_type: filters?.resourceType || undefined,
   };
   return apiClient.get<Resource[]>("/resources", { params }).then((res) => res.data);
 }
