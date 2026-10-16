@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type MouseEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -138,8 +138,10 @@ function NavGroup({
 }) {
   const hasChildren = !!item.children?.length;
   const childActive = isChildActive(item.children, fullPath);
-  const [open, setOpen] = useState(childActive);
-  const expanded = forceOpen || open;
+  // Start open if a child is active OR the group was manually opened before
+  const [open, setOpen] = useState(() => childActive);
+  // Keep the group open when navigating within it
+  const expanded = forceOpen || open || childActive;
 
   if (!hasChildren || mini) {
     const active = hasChildren ? childActive : fullPath === item.to;
@@ -262,6 +264,25 @@ export function AppShell({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [search, setSearch] = useState("");
 
+  const navListRef = useRef<HTMLUListElement>(null);
+  const scrollKey = `shell.navScroll.${user?.role ?? "anon"}`;
+
+  // Restore sidebar scroll position after each navigation (sidebar remounts per page)
+  useEffect(() => {
+    const el = navListRef.current;
+    if (!el) return;
+    try {
+      const saved = sessionStorage.getItem(scrollKey);
+      if (saved) el.scrollTop = Number(saved);
+    } catch { /* storage unavailable */ }
+  });
+
+  const handleNavScroll = useCallback(() => {
+    try {
+      sessionStorage.setItem(scrollKey, String(navListRef.current?.scrollTop ?? 0));
+    } catch { /* storage unavailable */ }
+  }, [scrollKey]);
+
   const tenantQuery = useQuery({
     queryKey: ["tenant-me"],
     queryFn: getMyTenant,
@@ -368,7 +389,7 @@ export function AppShell({
         </Box>
       )}
 
-      <List sx={{ px: 1, pt: 1, flex: 1, overflowY: "auto", overflowX: "hidden" }}>
+      <List ref={navListRef} onScroll={handleNavScroll} sx={{ px: 1, pt: 1, flex: 1, overflowY: "auto", overflowX: "hidden" }}>
         {filtered.map((item, index) =>
           item.kind === "section" ? (
             isMini ? null : (
