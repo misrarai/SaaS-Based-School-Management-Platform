@@ -75,7 +75,7 @@ export function CreateChallanPage() {
       setError(null);
       queryClient.invalidateQueries({ queryKey: ["fee-collection-invoices"] });
     },
-    onError: () => setError("Failed to generate challans. Make sure a fee structure is configured for the selected class(es)."),
+    onError: () => setError("No fee structure found for the selected class(es). Go to Fee → Fee Structure, select your class, add fee amounts, then come back here."),
   });
 
   const fmt = (n: number) => `PKR ${n.toLocaleString()}`;

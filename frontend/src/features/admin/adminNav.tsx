@@ -195,6 +195,7 @@ export const financeNav: NavItem[] = [
       { label: "View Challan", to: "/admin/fees/challan" },
       { label: "Security Fee", to: "/admin/fees/security" },
       { label: "Fee Heads", to: "/admin/fees/heads" },
+      { label: "Fee Structure", to: "/admin/fees/structure" },
       { label: "Slips", to: "/admin/fees/slips" },
       { label: "Reports", to: "/admin/fees/collection-reports" },
       { label: "Fee Analytics", to: "/admin/fees/analytics" },

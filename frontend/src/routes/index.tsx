@@ -48,6 +48,7 @@ import { CreateChallanPage } from "../features/admin/fees/CreateChallanPage";
 import { SendSMSPage as FeeSendSMSPage } from "../features/admin/fees/SendSMSPage";
 import { FeeSettingPage } from "../features/admin/fees/FeeSettingPage";
 import { SecurityFeePage } from "../features/admin/fees/SecurityFeePage";
+import { FeeStructurePage } from "../features/admin/fees/FeeStructurePage";
 import { PayoutRatesPage } from "../features/admin/payouts/PayoutRatesPage";
 import { PayoutsPage } from "../features/admin/payouts/PayoutsPage";
 import { NotificationsPage } from "../features/admin/notifications/NotificationsPage";
@@ -481,6 +482,7 @@ export function AppRoutes() {
       <Route path="/admin/fees/challan" element={<ProtectedRoute allowedRoles={["admin"]}><ViewChallanPage /></ProtectedRoute>} />
       <Route path="/admin/fees/security" element={<ProtectedRoute allowedRoles={["admin"]}><SecurityFeePage /></ProtectedRoute>} />
       <Route path="/admin/fees/heads" element={<ProtectedRoute allowedRoles={["admin"]}><FeeHeadsPage /></ProtectedRoute>} />
+      <Route path="/admin/fees/structure" element={<ProtectedRoute allowedRoles={["admin"]}><FeeStructurePage /></ProtectedRoute>} />
       <Route path="/admin/fees/slips" element={<ProtectedRoute allowedRoles={["admin"]}><SlipsPage /></ProtectedRoute>} />
       <Route path="/admin/fees/collection-reports" element={<ProtectedRoute allowedRoles={["admin"]}><FeeCollectionReportsPage /></ProtectedRoute>} />
       <Route path="/admin/fees/analytics" element={<ProtectedRoute allowedRoles={["admin"]}><FeeAnalyticsPage /></ProtectedRoute>} />
